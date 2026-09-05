@@ -1,0 +1,148 @@
+# ============================================================================
+# Generic root .gitignore for a multi-project collection repo
+# ----------------------------------------------------------------------------
+# Position: placed at the root so every sub-project inherits the rules.
+# Subprojects that need extras (e.g. *.pdf for a docs-only project) can drop
+# their own additional .gitignore next to a deeper rule with `!` re-includes.
+# ============================================================================
+
+# ===================  OS noise  ===================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.com.apple.timemachine.donotpresent
+.DocumentRevisions-V100
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*.swp
+*.swo
+*~
+.directory
+
+# ===================  Editors / IDEs  ===================
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+*.sublime-project
+*.sublime-workspace
+.cursor/
+.nvim/
+.emacs.d/
+
+# ===================  Python  ===================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+build/
+dist/
+.eggs/
+.installed.cfg
+*.egg
+
+# virtual envs
+.venv/
+venv/
+env/
+.env
+.env.local
+.env.*.local
+
+# testing / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.cache
+.mypy_cache/
+
+# ===================  Node / JavaScript  ===================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.pnp.*
+.next/
+.nuxt/
+out/
+.parcel-cache/
+.vite/
+
+# ===================  Java / JVM  ===================
+*.class
+*.jar
+*.war
+*.ear
+target/
+.gradle/
+build/
+.idea/
+
+# ===================  Rust / Go  ===================
+target/
+*.rs.bk
+*.pdb
+# Go
+vendor/
+*.out
+*.test
+
+# ===================  Office / WPS / PDF temporaries  ===================
+~$*
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# ===================  Logs  ===================
+*.log
+*.log.*
+logs/
+
+# ===================  Private keys / credentials  ===================
+# NEVER commit these — they leak access if the repo is cloned
+*.pem
+*.key
+*.pub
+.htpasswd
+secrets.*
+credentials.*
+*id_rsa*
+*id_ed25519*
+.env*
+
+# ===================  Personal work artifacts (project-neutral)  ===================
+# Local scratch directories that aren't deliverables
+test-*.html
+*-test.html
+*-demo.html
+*_test.html
+*_demo.html
+screenshots/
+
+# ===================  Resolving merge conflicts  ===================
+*.orig
+*.rej
+
+# ===================  Explicit "I made this on purpose" overrides  ===================
+# Anywhere a downstream project needs to UN-ignore a path, it drops a
+# .gitignore next to the files using !path/to/file patterns.
+# Root intentionally stays generic; do NOT add project-specific ! rules here.
