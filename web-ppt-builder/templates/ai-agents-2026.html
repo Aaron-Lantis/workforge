@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<!--
+  Template: ai-agents-2026 · reference deck for the web-ppt-builder pipeline
+  Theme:    dark-tech + liquid glass (css-variables.md recipe 1 + v2.0 HIG tokens)
+  Topic:    AI agents — technology evolution & industry landscape briefing
+  Layouts:  L01 L19 L17 L07 L05 L10 L11 L06 L09 L13 L08 L14 L20 (13 of 20)
+  Charts:   line (capability curves) · bar (market forecast) · h-bar (adoption)
+  Features: keyboard nav · thumbs · progress bar · hash deep-link · edit mode
+            (localStorage) · print layout · reduced-motion · responsive 900/560
+  Usage:    Visual/Builder agents consult this as the reference implementation
+            for structure, theming and interaction. Copy, then replace content.
+  Rule:     every template here must pass scripts/qa_static.py (exit 0).
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agents 2026 · 从模型到系统</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
+<style>
+:root {
+  /* ===== base tokens (css-variables.md · 深色科技) ===== */
+  --bg:               #070b16;
+  --bg-alt:           #0d1224;
+  --surface:          rgba(255,255,255,0.045);
+  --surface-strong:   rgba(255,255,255,0.07);
+  --line:             rgba(255,255,255,0.09);
+  --line-strong:      rgba(255,255,255,0.18);
+  --text:             #e8edf6;
+  --text-soft:        #c8d2e6;
+  --muted:            #8b96ad;
+  --inverse:          #070b16;
+  --accent:           #6ea8ff;
+  --accent-2:         #8f7bff;
+  --accent-3:         #2fbf8f;
+  --accent-warn:      #f5c76a;
+  --accent-danger:    #ff5b5b;
+  --grad-hero: radial-gradient(1200px 600px at 80% -10%, rgba(110,168,255,0.18), transparent 60%),
+                radial-gradient(900px 500px at -10% 30%, rgba(143,123,255,0.12), transparent 55%),
+                radial-gradient(700px 400px at 50% 110%, rgba(47,191,143,0.08), transparent 60%);
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:24px; --s-6:32px; --s-7:48px; --s-8:64px; --s-9:96px;
+  --r-sm:8px; --r-md:14px; --r-lg:20px; --r-xl:28px; --r-pill:999px;
+  --sh-1: 0 1px 2px rgba(0,0,0,0.20);
+  --sh-2: 0 6px 18px rgba(0,0,0,0.30);
+  --sh-3: 0 20px 60px rgba(0,0,0,0.40);
+  --glow: 0 0 32px rgba(110,168,255,0.35);
+  /* ===== v2.0 HIG enhancements ===== */
+  --sh-card:       0 1px 2px rgba(0,0,0,0.30), 0 4px 12px rgba(0,0,0,0.35), 0 12px 32px rgba(0,0,0,0.22);
+  --sh-card-hover: 0 2px 4px rgba(0,0,0,0.32), 0 10px 28px rgba(0,0,0,0.40), 0 24px 64px rgba(0,0,0,0.28);
+  --sh-float:      0 8px 20px rgba(0,0,0,0.36), 0 24px 60px rgba(0,0,0,0.30);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring:    cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-caption:11px; --t-footnote:12px; --t-subhead:15px; --t-body:17px; --t-headline:20px;
+  --t-title-3:24px; --t-title-2:30px; --t-title-1:38px; --t-large:48px; --t-display:64px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  --slide-pad: clamp(32px, 4vw, 80px);
+  --slide-w: 1280px;
+  --slide-h: 720px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  overflow:hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== deck frame ===== */
+main[role="main"] { position:relative; width:100%; height:100vh; height:100dvh; }
+
+.slide {
+  position:absolute; inset:0;
+  display:none;
+  flex-direction:column;
+  padding: var(--slide-pad);
+  padding-bottom: calc(var(--slide-pad) + 48px);
+  background: var(--bg);
+}
+.slide.active { display:flex; }
+
+/* entrance: transform-only (Plan A — opacity stays 1, content always visible) */
+@keyframes slideRise { from { transform: translateY(28px); } to { transform: translateY(0); } }
+@keyframes riseIn   { from { transform: translateY(24px); } to { transform: translateY(0); } }
+.slide.active { animation: slideRise 620ms var(--ease-out-expo); }
+.slide.active .anim { animation: riseIn 600ms var(--ease-out-expo) backwards; }
+.slide.active .d1 { animation-delay: 60ms; }
+.slide.active .d2 { animation-delay: 140ms; }
+.slide.active .d3 { animation-delay: 220ms; }
+.slide.active .d4 { animation-delay: 300ms; }
+.slide.active .d5 { animation-delay: 380ms; }
+
+/* ===== shared components ===== */
+.eyebrow {
+  font-size: var(--t-footnote); letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--accent); font-weight:500; margin-bottom: var(--s-3);
+}
+.slide-title { font-size: var(--t-title-1); font-weight:600; letter-spacing:-0.01em; line-height:1.15; }
+.slide-sub   { font-size: var(--t-subhead); color: var(--muted); margin-top: var(--s-3); line-height:1.6; }
+.slide-head { margin-bottom: var(--s-6); }
+.slide-body { flex:1; display:flex; min-height:0; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: transform 400ms var(--ease-out-quint), box-shadow 400ms var(--ease-out-quint), border-color 400ms;
+}
+.card:hover { transform: translateY(-4px); box-shadow: var(--sh-card-hover); border-color: var(--line-strong); }
+
+.footnote { font-size: var(--t-caption); color: var(--muted); }
+.src-note { margin-top: var(--s-4); font-size: var(--t-caption); color: var(--muted); display:flex; align-items:center; gap: var(--s-2); }
+.src-note i { color: var(--accent); }
+
+/* ===== L01 cover ===== */
+.l01 { justify-content:center; align-items:center; text-align:center; background: var(--grad-hero), var(--bg); }
+.l01 .cover-motif {
+  width:72px; height:72px; border-radius: var(--r-xl);
+  display:flex; align-items:center; justify-content:center;
+  background: var(--surface-strong); border:1px solid var(--line-strong);
+  box-shadow: var(--sh-float), var(--glow); margin-bottom: var(--s-6);
+}
+.l01 .cover-motif i { font-size:30px; color: var(--accent); }
+.l01 h1 { font-size: var(--t-display); font-weight:700; letter-spacing:-0.02em; line-height:1.08; }
+.l01 h1 .thin { font-weight:300; color: var(--text-soft); }
+.l01 .cover-sub { font-size: var(--t-headline); color: var(--text-soft); font-weight:400; margin-top: var(--s-5); }
+.l01 .cover-meta {
+  margin-top: var(--s-7); display:flex; gap: var(--s-5); align-items:center;
+  font-size: var(--t-footnote); color: var(--muted);
+}
+.l01 .cover-meta span { display:flex; align-items:center; gap: var(--s-2); }
+.l01 .cover-meta i { color: var(--accent-2); }
+.l01 .cover-meta .dot { width:4px; height:4px; border-radius:50%; background: var(--muted); }
+
+/* ===== L19 agenda ===== */
+.agenda-grid { display:grid; grid-template-columns:1fr 1fr; gap: var(--s-5); width:100%; align-content:center; }
+.agenda-item { display:flex; gap: var(--s-4); align-items:flex-start; padding: var(--s-5); }
+.agenda-item .num {
+  font-family: var(--font-mono); font-size: var(--t-title-2); font-weight:600;
+  color: var(--accent); line-height:1; min-width:52px;
+}
+.agenda-item h3 { font-size: var(--t-headline); font-weight:500; margin-bottom: var(--s-2); }
+.agenda-item p { font-size: var(--t-body); color: var(--muted); line-height:1.55; }
+
+/* ===== L17 timeline ===== */
+.tl-wrap { width:100%; display:flex; flex-direction:column; justify-content:center; }
+.tl-rail { position:relative; height:2px; background: var(--line-strong); margin: var(--s-8) var(--s-4); border-radius: var(--r-pill); }
+.tl-rail::before { content:""; position:absolute; left:0; top:0; height:2px; width:100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3)); opacity:.7; border-radius: var(--r-pill); }
+.tl-items { display:grid; grid-template-columns:repeat(5,1fr); gap: var(--s-3); }
+.tl-item { position:relative; padding-top: var(--s-6); }
+.tl-item::before { content:""; position:absolute; top:-37px; left:50%; transform:translateX(-50%);
+  width:12px; height:12px; border-radius:50%; background: var(--bg); border:2px solid var(--accent); box-shadow: var(--glow); }
+.tl-item .tl-year { font-family: var(--font-mono); font-size: var(--t-subhead); color: var(--accent); font-weight:600; text-align:center; }
+.tl-item h4 { font-size: var(--t-body); font-weight:500; text-align:center; margin: var(--s-2) 0; }
+.tl-item p { font-size: var(--t-footnote); color: var(--muted); text-align:center; line-height:1.5; }
+
+/* ===== L07 three pillars ===== */
+.pillars { display:grid; grid-template-columns:repeat(3,1fr); gap: var(--s-5); width:100%; align-content:center; }
+.pillar { padding: var(--s-6); display:flex; flex-direction:column; gap: var(--s-3); }
+.pillar .p-icon { width:48px; height:48px; border-radius: var(--r-md); display:flex; align-items:center; justify-content:center;
+  background: var(--surface-strong); border:1px solid var(--line-strong); }
+.pillar .p-icon i { font-size:20px; }
+.pillar:nth-child(1) .p-icon i { color: var(--accent); }
+.pillar:nth-child(2) .p-icon i { color: var(--accent-2); }
+.pillar:nth-child(3) .p-icon i { color: var(--accent-3); }
+.pillar h3 { font-size: var(--t-title-3); font-weight:600; }
+.pillar h3 small { font-size: var(--t-caption); color: var(--muted); font-weight:400; margin-left: var(--s-2); }
+.pillar p { font-size: var(--t-body); color: var(--text-soft); line-height:1.6; }
+.pillar .p-tag { font-size: var(--t-footnote); color: var(--accent); font-family: var(--font-mono); }
+.defbar { width:100%; padding: var(--s-4) var(--s-5); border-radius: var(--r-md); margin-bottom: var(--s-5);
+  background: var(--surface); border:1px solid var(--line); display:flex; gap: var(--s-3); align-items:center; }
+.defbar i { color: var(--accent-warn); }
+.defbar p { font-size: var(--t-subhead); color: var(--text-soft); line-height:1.6; }
+.defbar b { color: var(--text); font-weight:600; }
+
+/* ===== L05 split + stack diagram ===== */
+.split { display:grid; grid-template-columns: 1fr 1fr; gap: var(--s-7); width:100%; align-items:center; }
+.split .lead { font-size: var(--t-body); color: var(--text-soft); line-height:1.75; }
+.split .lead b { color: var(--text); }
+.split .lead + .lead { margin-top: var(--s-4); }
+.stack { display:flex; flex-direction:column; gap: var(--s-3); }
+.stack .layer { display:flex; align-items:center; gap: var(--s-4); padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-md); background: var(--surface); border:1px solid var(--line); }
+.stack .layer .lno { font-family: var(--font-mono); font-size: var(--t-footnote); color: var(--muted); min-width:34px; }
+.stack .layer h4 { font-size: var(--t-subhead); font-weight:600; }
+.stack .layer p { font-size: var(--t-footnote); color: var(--muted); margin-top:2px; }
+.stack .layer .l-icon { margin-left:auto; color: var(--accent); opacity:.8; }
+.stack .layer:nth-child(1) { border-color: rgba(143,123,255,0.35); }
+.stack .layer:nth-child(4) { border-color: rgba(110,168,255,0.35); }
+.stack .layer:nth-child(1) .l-icon { color: var(--accent-2); }
+
+/* ===== chart slides ===== */
+.chart-split { display:grid; grid-template-columns: 5fr 7fr; gap: var(--s-6); width:100%; min-height:0; }
+.chart-box { position:relative; padding: var(--s-5); min-height:0; display:flex; }
+.chart { width:100%; height:100%; min-height:320px; }
+.chart-fallback { display:flex; align-items:center; justify-content:center; height:100%; color: var(--muted);
+  text-align:center; padding: var(--s-5); border:1px dashed var(--line); border-radius: var(--r-md); font-size: var(--t-subhead); }
+
+/* ===== L10 KPI strip ===== */
+.kpis { display:grid; grid-template-columns:repeat(3,1fr); gap: var(--s-5); width:100%; margin-bottom: var(--s-6); }
+.kpi { padding: var(--s-5); text-align:center; }
+.kpi .k-val { font-size: var(--t-large); font-weight:700; letter-spacing:-0.02em; color: var(--accent); font-family: var(--font-mono); }
+.kpi:nth-child(2) .k-val { color: var(--accent-3); }
+.kpi:nth-child(3) .k-val { color: var(--accent-2); }
+.kpi .k-label { font-size: var(--t-subhead); color: var(--text-soft); margin-top: var(--s-2); }
+.kpi .k-sub { font-size: var(--t-caption); color: var(--muted); margin-top: var(--s-1); }
+
+/* ===== L11 big stat ===== */
+.bigstat { width:100%; display:grid; grid-template-columns: 5fr 7fr; gap: var(--s-7); align-items:center; min-height:0; }
+.bigstat .bs-num { font-size: clamp(72px, 10vw, 128px); font-weight:700; letter-spacing:-0.03em; line-height:1;
+  background: linear-gradient(120deg, var(--accent), var(--accent-2)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.bigstat .bs-cap { font-size: var(--t-headline); color: var(--text-soft); margin-top: var(--s-4); line-height:1.5; }
+.bigstat .bs-src { margin-top: var(--s-3); }
+
+/* ===== L06 multi-agent diagram ===== */
+.ma-diagram { display:flex; flex-direction:column; gap: var(--s-4); width:100%; }
+.ma-director { align-self:center; padding: var(--s-3) var(--s-6); border-radius: var(--r-pill);
+  background: var(--surface-strong); border:1px solid var(--line-strong); box-shadow: var(--sh-float);
+  font-size: var(--t-subhead); font-weight:600; display:flex; align-items:center; gap: var(--s-3); }
+.ma-director i { color: var(--accent-warn); }
+.ma-branch { position:relative; height:26px; }
+.ma-branch::before { content:""; position:absolute; left:50%; top:0; width:2px; height:13px; background: var(--line-strong); }
+.ma-branch::after { content:""; position:absolute; left:10%; right:10%; top:13px; height:2px; background: var(--line-strong); }
+.ma-agents { display:grid; grid-template-columns:repeat(5,1fr); gap: var(--s-3); }
+.ma-agents::before { content:none; }
+.ma-stub { position:relative; }
+.ma-stub::before { content:""; position:absolute; left:50%; top:-13px; width:2px; height:13px; background: var(--line-strong); }
+.ma-agent { padding: var(--s-4) var(--s-3); text-align:center; border-radius: var(--r-md); }
+.ma-agent i { font-size:18px; color: var(--accent); margin-bottom: var(--s-2); display:block; }
+.ma-agent h5 { font-size: var(--t-footnote); font-weight:600; }
+.ma-agent p { font-size: var(--t-caption); color: var(--muted); margin-top: var(--s-1); line-height:1.4; }
+.ma-note { text-align:center; font-size: var(--t-footnote); color: var(--muted); }
+.ma-note i { color: var(--accent-3); }
+
+/* ===== L09 quadrant ===== */
+.quad { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap: var(--s-4); width:100%; }
+.quad .q { padding: var(--s-5); display:flex; gap: var(--s-4); align-items:flex-start; }
+.quad .q i { font-size:20px; margin-top:4px; }
+.quad .q:nth-child(1) i { color: var(--accent-danger); }
+.quad .q:nth-child(2) i { color: var(--accent-warn); }
+.quad .q:nth-child(3) i { color: var(--accent-2); }
+.quad .q:nth-child(4) i { color: var(--accent); }
+.quad .q h4 { font-size: var(--t-headline); font-weight:600; margin-bottom: var(--s-2); }
+.quad .q p { font-size: var(--t-subhead); color: var(--muted); line-height:1.6; }
+
+/* ===== L13 flow ===== */
+.flow { display:flex; align-items:stretch; gap:0; width:100%; }
+.flow .step { flex:1; padding: var(--s-5); position:relative; }
+.flow .step + .step { margin-left: var(--s-6); }
+.flow .step + .step::before { content:"\f061"; font-family:"Font Awesome 6 Free"; font-weight:900;
+  position:absolute; left: calc(-1 * var(--s-6) + 4px); top:50%; transform:translate(-50%,-50%);
+  color: var(--accent); font-size:14px; }
+.flow .step .s-no { font-family: var(--font-mono); font-size: var(--t-footnote); color: var(--accent); margin-bottom: var(--s-2); }
+.flow .step h4 { font-size: var(--t-headline); font-weight:600; margin-bottom: var(--s-2); display:flex; align-items:center; gap: var(--s-2); }
+.flow .step h4 i { color: var(--accent-2); font-size:16px; }
+.flow .step p { font-size: var(--t-subhead); color: var(--muted); line-height:1.6; }
+.flow-tail { margin-top: var(--s-6); width:100%; }
+
+/* ===== L08 compare ===== */
+.compare { display:grid; grid-template-columns:repeat(3,1fr); gap: var(--s-5); width:100%; align-content:center; }
+.cmp { padding: var(--s-6); }
+.cmp .c-head { display:flex; align-items:center; gap: var(--s-3); margin-bottom: var(--s-4); }
+.cmp .c-head i { font-size:20px; }
+.cmp:nth-child(1) .c-head i { color: var(--accent); }
+.cmp:nth-child(2) .c-head i { color: var(--accent-3); }
+.cmp:nth-child(3) .c-head i { color: var(--accent-warn); }
+.cmp h3 { font-size: var(--t-title-3); font-weight:600; }
+.cmp ul { list-style:none; }
+.cmp li { font-size: var(--t-subhead); color: var(--text-soft); line-height:1.6; padding: var(--s-2) 0; border-bottom:1px solid var(--line); display:flex; gap: var(--s-2); }
+.cmp li:last-child { border-bottom:none; }
+.cmp li::before { content:"\f00c"; font-family:"Font Awesome 6 Free"; font-weight:900; color: var(--accent-3); font-size:12px; margin-top:5px; }
+.cmp .c-tag { margin-top: var(--s-4); font-size: var(--t-caption); color: var(--muted); font-family: var(--font-mono); }
+
+/* ===== L14 outlook ===== */
+.outlook { display:grid; grid-template-columns:repeat(3,1fr); gap: var(--s-5); width:100%; align-content:center; }
+.o-card { padding: var(--s-6); display:flex; flex-direction:column; gap: var(--s-3); }
+.o-card .o-no { font-family: var(--font-mono); font-size: var(--t-title-2); font-weight:700; color: var(--accent-2); }
+.o-card h3 { font-size: var(--t-title-3); font-weight:600; line-height:1.35; }
+.o-card p { font-size: var(--t-body); color: var(--muted); line-height:1.65; }
+.o-card .o-icon { margin-left:auto; color: var(--accent); opacity:.85; font-size:22px; }
+
+/* ===== L20 closing ===== */
+.l20 { justify-content:center; align-items:center; text-align:center; background: var(--grad-hero), var(--bg); }
+.l20 h1 { font-size: var(--t-display); font-weight:700; letter-spacing:-0.02em; }
+.l20 .close-sub { font-size: var(--t-headline); color: var(--text-soft); margin-top: var(--s-4); }
+.l20 .byline { margin-top: var(--s-7); font-size: var(--t-footnote); color: var(--muted); display:flex; gap: var(--s-5); align-items:center; }
+.l20 .byline i { color: var(--accent); }
+.l20 .disclaimer { margin-top: var(--s-5); max-width:720px; font-size: var(--t-caption); color: var(--muted); line-height:1.7; padding: var(--s-4) var(--s-5);
+  border:1px dashed var(--line); border-radius: var(--r-md); background: var(--surface); }
+
+/* ===== chrome: controls / thumbs / progress / click zones ===== */
+.controls {
+  position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+  display:flex; align-items:center; gap: var(--s-2);
+  background: var(--surface-strong); border:1px solid var(--line-strong); border-radius: var(--r-pill);
+  padding: var(--s-2) var(--s-3); box-shadow: var(--sh-float); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  z-index:60;
+}
+.controls button {
+  width:36px; height:36px; border-radius:50%; border:none; background:transparent; color: var(--text-soft);
+  cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px;
+  transition: background 250ms var(--ease-out-quint), color 250ms;
+}
+.controls button:hover { background: var(--surface-strong); color: var(--accent); }
+.controls .page-num { font-family: var(--font-mono); font-size: var(--t-footnote); color: var(--muted); min-width:64px; text-align:center; }
+.controls .sep { width:1px; height:20px; background: var(--line-strong); }
+
+.thumbs {
+  position:fixed; right: var(--s-4); top:50%; transform:translateY(-50%);
+  display:flex; flex-direction:column; gap:10px; z-index:55; max-height:70vh; overflow:auto; padding: var(--s-2);
+}
+.thumbs::-webkit-scrollbar { width:0; }
+.thumbs button {
+  width:10px; height:10px; border-radius:50%; border:1px solid var(--line-strong); background: var(--surface);
+  cursor:pointer; padding:0; transition: all 250ms var(--ease-out-quint);
+}
+.thumbs button:hover { border-color: var(--accent); }
+.thumbs button.on { background: var(--accent); border-color: var(--accent); box-shadow: var(--glow); }
+
+.progress { position:fixed; left:0; top:0; height:3px; width:100%; background: var(--line); z-index:70; }
+.progress > div { height:100%; width:0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 420ms var(--ease-out-quint); }
+
+.click-zone { position:fixed; top:0; bottom:0; width:18%; z-index:40; cursor:pointer; }
+.click-zone-left { left:0; }
+.click-zone-right { right:0; }
+
+body.editing .slide.active .slide-body, body.editing .slide.active .cover-sub { outline:1px dashed var(--accent-warn); outline-offset:6px; border-radius: var(--r-sm); }
+.edit-hint { position:fixed; left:50%; bottom:74px; transform:translateX(-50%); z-index:65; display:none;
+  font-size: var(--t-caption); color: var(--accent-warn); background: var(--surface-strong); border:1px solid var(--line-strong);
+  padding: var(--s-2) var(--s-4); border-radius: var(--r-pill); backdrop-filter: blur(20px); }
+body.editing .edit-hint { display:block; }
+
+/* ===== responsive ===== */
+@media (max-width: 900px) {
+  .split, .chart-split, .bigstat { grid-template-columns:1fr; }
+  .pillars, .kpis, .compare, .outlook { grid-template-columns:1fr; }
+  .quad { grid-template-columns:1fr; }
+  .tl-items { grid-template-columns:1fr; gap: var(--s-4); }
+  .tl-rail { display:none; }
+  .tl-item::before { display:none; }
+  .tl-item { padding-top:0; text-align:left; }
+  .tl-item .tl-year, .tl-item h4, .tl-item p { text-align:left; }
+  .ma-agents { grid-template-columns:repeat(2,1fr); }
+  .flow { flex-direction:column; gap: var(--s-4); }
+  .flow .step + .step { margin-left:0; }
+  .flow .step + .step::before { content:none; }
+  .thumbs { display:none; }
+  .agenda-grid { grid-template-columns:1fr; }
+}
+@media (max-width: 560px) {
+  .slide { padding: 20px; padding-bottom:80px; }
+  .slide-title { font-size: var(--t-title-2); }
+  .l01 h1 { font-size: var(--t-title-1); }
+}
+
+/* ===== print: one slide per page ===== */
+@media print {
+  body { overflow:visible; background: var(--bg); }
+  main[role="main"] { height:auto; }
+  .slide { position:relative; display:flex !important; page-break-after:always; break-after:page;
+    min-height:100vh; padding:48px; animation:none !important; }
+  .slide.active { animation:none !important; }
+  .controls, .thumbs, .progress, .click-zone, .edit-hint { display:none !important; }
+  .card:hover { transform:none; }
+}
+
+/* ===== reduced motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-delay: 0ms !important; transition-duration: 0.001ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="progress" aria-hidden="true"><div id="progressBar"></div></div>
+
+<main id="deck" role="main">
+
+  <!-- 01 · L01 cover -->
+  <section class="slide l01" data-index="1">
+    <div class="cover-motif anim d1"><i class="fa-solid fa-robot"></i></div>
+    <h1 class="anim d2">AI Agents <span class="thin">2026</span></h1>
+    <p class="cover-sub anim d3">从模型到系统 —— 智能体的技术演进与产业落地</p>
+    <div class="cover-meta anim d4">
+      <span><i class="fa-solid fa-calendar"></i> 2026 年 9 月</span>
+      <span class="dot"></span>
+      <span><i class="fa-solid fa-chalkboard-user"></i> 技术评审 · 产业 briefing</span>
+      <span class="dot"></span>
+      <span><i class="fa-solid fa-layer-group"></i> web-ppt-builder 样板</span>
+    </div>
+  </section>
+
+  <!-- 02 · L19 agenda -->
+  <section class="slide" data-index="2">
+    <header class="slide-head anim">
+      <div class="eyebrow">Agenda</div>
+      <h2 class="slide-title">本次汇报的四个部分</h2>
+    </header>
+    <div class="slide-body">
+      <div class="agenda-grid">
+        <div class="card agenda-item anim d1">
+          <div class="num">01</div>
+          <div><h3>演进脉络</h3><p>从 Chatbot 到 Agent OS：四个阶段的关键拐点</p></div>
+        </div>
+        <div class="card agenda-item anim d2">
+          <div class="num">02</div>
+          <div><h3>技术解剖</h3><p>规划、工具、记忆三大支柱与多智能体协作范式</p></div>
+        </div>
+        <div class="card agenda-item anim d3">
+          <div class="num">03</div>
+          <div><h3>数据视角</h3><p>能力基准、市场规模与开发者采用率的真实曲线</p></div>
+        </div>
+        <div class="card agenda-item anim d4">
+          <div class="num">04</div>
+          <div><h3>落地与展望</h3><p>金融行业四大场景、安全治理与 2027 三大趋势</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 · L17 timeline -->
+  <section class="slide" data-index="3">
+    <header class="slide-head anim">
+      <div class="eyebrow">01 · 演进脉络</div>
+      <h2 class="slide-title">四年，三个范式拐点</h2>
+      <p class="slide-sub">从「对话」到「推理」再到「自主执行」——每一次跃迁都重构了上层应用形态</p>
+    </header>
+    <div class="slide-body">
+      <div class="tl-wrap">
+        <div class="tl-items">
+          <div class="tl-item anim d1">
+            <div class="tl-year">2022</div>
+            <h4>对话式 AI 起点</h4>
+            <p>ChatGPT 发布，LLM 以对话形态触达亿级用户</p>
+          </div>
+          <div class="tl-item anim d2">
+            <div class="tl-year">2023</div>
+            <h4>专业级推理</h4>
+            <p>GPT-4 多模态能力上线，通过专业考试基准</p>
+          </div>
+          <div class="tl-item anim d3">
+            <div class="tl-year">2024</div>
+            <h4>推理模型范式</h4>
+            <p>测试时计算（o1 类模型）：用推理时间换答案质量</p>
+          </div>
+          <div class="tl-item anim d4">
+            <div class="tl-year">2025</div>
+            <h4>Agent 元年</h4>
+            <p>工具调用、计算机操作、编码智能体规模化落地</p>
+          </div>
+          <div class="tl-item anim d5">
+            <div class="tl-year">2026</div>
+            <h4>多智能体系统</h4>
+            <p>编排框架与多 Agent 协作成为主流生产形态</p>
+          </div>
+        </div>
+        <div class="tl-rail" aria-hidden="true"></div>
+        <div class="src-note anim d5"><i class="fa-solid fa-circle-info"></i> 里程碑事件均取自各厂商公开发布信息</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 · L07 what is an agent -->
+  <section class="slide" data-index="4">
+    <header class="slide-head anim">
+      <div class="eyebrow">02 · 技术解剖</div>
+      <h2 class="slide-title">什么是 AI Agent</h2>
+    </header>
+    <div class="slide-body" style="flex-direction:column; justify-content:center;">
+      <div class="defbar anim d1">
+        <i class="fa-solid fa-quote-left"></i>
+        <p>以大模型为核心、具备<b>「规划 → 行动 → 反思」</b>自主闭环的软件系统 —— 它不只是回答问题，而是<b>完成任务</b>。</p>
+      </div>
+      <div class="pillars">
+        <div class="card pillar anim d2">
+          <div class="p-icon"><i class="fa-solid fa-diagram-project"></i></div>
+          <h3>规划 <small>Planning</small></h3>
+          <p>任务分解与多步推理：把模糊目标拆解为可执行步骤，动态调整执行顺序。</p>
+          <div class="p-tag">plan → act → observe</div>
+        </div>
+        <div class="card pillar anim d3">
+          <div class="p-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+          <h3>工具 <small>Tools</small></h3>
+          <p>函数调用、代码执行、环境交互：让模型的手伸进真实系统 —— 检索、API、浏览器、沙箱。</p>
+          <div class="p-tag">function calling / MCP</div>
+        </div>
+        <div class="card pillar anim d4">
+          <div class="p-icon"><i class="fa-solid fa-brain"></i></div>
+          <h3>记忆 <small>Memory</small></h3>
+          <p>短期上下文 + 长期记忆（向量库 / 文件系统）：跨会话沉淀经验，突破上下文窗口限制。</p>
+          <div class="p-tag">short-term + long-term</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 · L05 stack -->
+  <section class="slide" data-index="5">
+    <header class="slide-head anim">
+      <div class="eyebrow">02 · 技术解剖</div>
+      <h2 class="slide-title">技术栈的四层解剖</h2>
+    </header>
+    <div class="slide-body">
+      <div class="split">
+        <div>
+          <p class="lead anim d1"><b>Agent 系统的价值不在单层，而在分层解耦。</b>模型层负责认知，工具层负责行动，编排层负责协作与护栏，应用层负责领域语义。</p>
+          <p class="lead anim d2">与 2023 年「一个模型打天下」的应用形态相比，2026 年的竞争力向<b>编排层与应用层</b>上移 —— 这也是企业自建能力的切入点。</p>
+          <p class="lead anim d3">工具协议的标准化（如 MCP）正在重演「USB 接口时刻」：任意模型 × 任意工具的组合成本骤降。</p>
+        </div>
+        <div class="stack">
+          <div class="layer anim d1">
+            <span class="lno">L4</span>
+            <div><h4>应用层 · 领域智能体</h4><p>投研助手 / 风控审查 / 客服 / 合规报送</p></div>
+            <i class="fa-solid fa-briefcase l-icon"></i>
+          </div>
+          <div class="layer anim d2">
+            <span class="lno">L3</span>
+            <div><h4>编排层 · 多智能体协作</h4><p>任务调度 · 显式契约 · 质量门禁 · 护栏</p></div>
+            <i class="fa-solid fa-sitemap l-icon"></i>
+          </div>
+          <div class="layer anim d3">
+            <span class="lno">L2</span>
+            <div><h4>工具层 · 能力接口</h4><p>Function Calling · MCP · 沙箱执行 · 浏览器</p></div>
+            <i class="fa-solid fa-plug l-icon"></i>
+          </div>
+          <div class="layer anim d4">
+            <span class="lno">L1</span>
+            <div><h4>模型层 · 认知基座</h4><p>基座 LLM · 推理模型 · 多模态 · 嵌入</p></div>
+            <i class="fa-solid fa-microchip l-icon"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 · chart: capability -->
+  <section class="slide" data-index="6">
+    <header class="slide-head anim">
+      <div class="eyebrow">03 · 数据视角</div>
+      <h2 class="slide-title">能力演进：两条陡峭的曲线</h2>
+    </header>
+    <div class="slide-body">
+      <div class="chart-split">
+        <div>
+          <p class="lead anim d1" style="font-size: var(--t-body); color: var(--text-soft); line-height:1.75;">
+            <b>推理模型重定义了能力上限。</b>研究生级科学问答（GPQA Diamond）从 2023 年的约四成正确率，两年内被推至 85% 以上。
+          </p>
+          <p class="lead anim d2" style="font-size: var(--t-body); color: var(--text-soft); line-height:1.75;">
+            更关键的是<b>长时程工程任务</b>：伴随 Agent 框架成熟，真实代码库问题解决率从个位数升至七成区间 —— 这是「演示」与「生产」的分水岭。
+          </p>
+        </div>
+        <div class="card chart-box anim d3">
+          <div class="chart" id="chartCapability" data-label="能力演进曲线"></div>
+        </div>
+      </div>
+    </div>
+    <div class="src-note anim d4"><i class="fa-solid fa-database"></i> 示意数据 · 综合各模型技术报告与 GPQA / SWE-bench 公开基准口径</div>
+  </section>
+
+  <!-- 07 · chart: market -->
+  <section class="slide" data-index="7">
+    <header class="slide-head anim">
+      <div class="eyebrow">03 · 数据视角</div>
+      <h2 class="slide-title">市场规模：一条陡峭的增长跑道</h2>
+    </header>
+    <div class="slide-body" style="flex-direction:column;">
+      <div class="kpis">
+        <div class="card kpi anim d1">
+          <div class="k-val">~$5B</div>
+          <div class="k-label">2024 全球市场规模</div>
+          <div class="k-sub">GVR 口径 · 约数</div>
+        </div>
+        <div class="card kpi anim d2">
+          <div class="k-val">~$47B</div>
+          <div class="k-label">2030 预测规模</div>
+          <div class="k-sub">同一口径外推</div>
+        </div>
+        <div class="card kpi anim d3">
+          <div class="k-val">~45%</div>
+          <div class="k-label">年复合增长率</div>
+          <div class="k-sub">2025–2030</div>
+        </div>
+      </div>
+      <div class="card chart-box anim d4" style="flex:1; min-height:220px;">
+        <div class="chart" id="chartMarket" data-label="市场规模预测"></div>
+      </div>
+    </div>
+    <div class="src-note anim d5"><i class="fa-solid fa-database"></i> 预测数据 · Grand View Research 等机构公开口径（机构间差异较大，此处取约数示意）</div>
+  </section>
+
+  <!-- 08 · big stat: coding -->
+  <section class="slide" data-index="8">
+    <header class="slide-head anim">
+      <div class="eyebrow">03 · 数据视角</div>
+      <h2 class="slide-title">渗透最快的主战场：软件开发</h2>
+    </header>
+    <div class="slide-body">
+      <div class="bigstat">
+        <div>
+          <div class="bs-num anim d1">84%</div>
+          <p class="bs-cap anim d2">开发者正在使用或计划使用 AI 工具</p>
+          <div class="bs-src anim d3 footnote">Stack Overflow Developer Survey 2025 · 有效样本约 49,000</div>
+        </div>
+        <div class="card chart-box anim d3">
+          <div class="chart" id="chartAdoption" data-label="开发环节 AI 使用率"></div>
+        </div>
+      </div>
+    </div>
+    <div class="src-note anim d4"><i class="fa-solid fa-database"></i> 分环节使用率为行业调查口径示意 · 趋势方向可靠、精确数值随调查差异浮动</div>
+  </section>
+
+  <!-- 09 · L06 multi-agent -->
+  <section class="slide" data-index="9">
+    <header class="slide-head anim">
+      <div class="eyebrow">02 · 技术解剖</div>
+      <h2 class="slide-title">为什么是多智能体</h2>
+    </header>
+    <div class="slide-body" style="flex-direction:column; justify-content:center;">
+      <div class="split" style="align-items:start;">
+        <div>
+          <p class="lead anim d1">单个 Agent 在<b>注意力、上下文与可靠性</b>上都有天花板：任务越长，偏差越容易在多步之间复利放大。</p>
+          <p class="lead anim d2">多智能体方案把复杂任务拆给<b>角色化专家</b>，用显式契约交接、用自动化门禁质检 —— 与人类团队的分工原理相同。</p>
+          <p class="lead anim d3">本演示文稿自身即由一条多智能体流水线生成：需求 → 大纲 → 视觉 → 构建 → 质检，五个角色各司其职。</p>
+        </div>
+        <div class="ma-diagram anim d3">
+          <div class="ma-director"><i class="fa-solid fa-compass"></i> Director · 任务调度与契约管理</div>
+          <div class="ma-branch" aria-hidden="true"></div>
+          <div class="ma-agents">
+            <div class="ma-stub card ma-agent"><i class="fa-solid fa-clipboard-list"></i><h5>Requirements</h5><p>需求澄清</p></div>
+            <div class="ma-stub card ma-agent"><i class="fa-solid fa-list-ol"></i><h5>Outline</h5><p>大纲结构</p></div>
+            <div class="ma-stub card ma-agent"><i class="fa-solid fa-palette"></i><h5>Visual</h5><p>视觉规范</p></div>
+            <div class="ma-stub card ma-agent"><i class="fa-solid fa-code"></i><h5>Builder</h5><p>页面构建</p></div>
+            <div class="ma-stub card ma-agent"><i class="fa-solid fa-shield-halved"></i><h5>QA</h5><p>质量门禁</p></div>
+          </div>
+          <p class="ma-note"><i class="fa-solid fa-arrow-rotate"></i> 共享白板交接 · 每一步产物均可审计</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · L09 challenges -->
+  <section class="slide" data-index="10">
+    <header class="slide-head anim">
+      <div class="eyebrow">04 · 落地与展望</div>
+      <h2 class="slide-title">规模化的四道坎</h2>
+      <p class="slide-sub">对这四点的清醒程度，直接决定企业 Agent 项目的成败排序</p>
+    </header>
+    <div class="slide-body">
+      <div class="quad">
+        <div class="card q anim d1">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <div><h4>可靠性</h4><p>长时程任务成功率随步数衰减，幻觉在多步推理中被放大。需要「检查点 + 门禁 + 回滚」的工程化兜底。</p></div>
+        </div>
+        <div class="card q anim d2">
+          <i class="fa-solid fa-coins"></i>
+          <div><h4>成本</h4><p>推理模型用测试时计算换质量，token 开销数倍于普通模型。任务路由（简单/复杂分流）成为成本治理标配。</p></div>
+        </div>
+        <div class="card q anim d3">
+          <i class="fa-solid fa-user-shield"></i>
+          <div><h4>安全</h4><p>提示注入、越权操作与数据外泄是 Agent 特有的攻击面 —— 它会「替你行动」，而不只是「替你回答」。</p></div>
+        </div>
+        <div class="card q anim d4">
+          <i class="fa-solid fa-ruler"></i>
+          <div><h4>评测</h4><p>静态基准快速饱和，长时程开放式任务缺乏公认评测。企业需要建立自己的领域评测集。</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · L13 governance flow -->
+  <section class="slide" data-index="11">
+    <header class="slide-head anim">
+      <div class="eyebrow">04 · 落地与展望</div>
+      <h2 class="slide-title">安全治理的闭环</h2>
+    </header>
+    <div class="slide-body" style="flex-direction:column; justify-content:center;">
+      <div class="flow">
+        <div class="card step anim d1">
+          <div class="s-no">STEP 1</div>
+          <h4><i class="fa-solid fa-key"></i> 最小权限</h4>
+          <p>工具白名单、只读优先、沙箱执行；权限按任务粒度动态授予与回收。</p>
+        </div>
+        <div class="card step anim d2">
+          <div class="s-no">STEP 2</div>
+          <h4><i class="fa-solid fa-user-check"></i> 人工在环</h4>
+          <p>高风险动作（资金、外发、删除）强制人工确认；置信度阈值触发升级。</p>
+        </div>
+        <div class="card step anim d3">
+          <div class="s-no">STEP 3</div>
+          <h4><i class="fa-solid fa-receipt"></i> 审计留痕</h4>
+          <p>每一步工具调用、输入输出与决策理由全量记录，可回放、可追责。</p>
+        </div>
+        <div class="card step anim d4">
+          <div class="s-no">STEP 4</div>
+          <h4><i class="fa-solid fa-crosshairs"></i> 红队演练</h4>
+          <p>定期对抗测试：提示注入、越权、数据外泄场景化演练并复盘整改。</p>
+        </div>
+      </div>
+      <div class="defbar flow-tail anim d5">
+        <i class="fa-solid fa-scale-balanced"></i>
+        <p>外部框架同步收敛：OWASP 已发布 LLM/Agent 应用 Top 10 风险清单，欧盟 AI 法案按风险分级落地 —— <b>合规正在从「加分项」变为「入场券」</b>。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 · L08 landscape -->
+  <section class="slide" data-index="12">
+    <header class="slide-head anim">
+      <div class="eyebrow">04 · 落地与展望</div>
+      <h2 class="slide-title">产业格局：三个生态位</h2>
+    </header>
+    <div class="slide-body">
+      <div class="compare">
+        <div class="card cmp anim d1">
+          <div class="c-head"><i class="fa-solid fa-gem"></i><h3>前沿模型派</h3></div>
+          <ul>
+            <li>闭源 API 主导，追求通用能力上限</li>
+            <li>推理模型 + 原生工具调用深度绑定</li>
+            <li>按 token 计费，能力迭代最快</li>
+          </ul>
+          <div class="c-tag">定位：能力供应商</div>
+        </div>
+        <div class="card cmp anim d2">
+          <div class="c-head"><i class="fa-solid fa-code-branch"></i><h3>开源生态派</h3></div>
+          <ul>
+            <li>开放权重 + 自托管，可控性与数据合规占优</li>
+            <li>编排框架繁荣，厂商锁定风险低</li>
+            <li>适合深度定制与私有化部署场景</li>
+          </ul>
+          <div class="c-tag">定位：可控性选项</div>
+        </div>
+        <div class="card cmp anim d3">
+          <div class="c-head"><i class="fa-solid fa-cloud"></i><h3>垂直应用层</h3></div>
+          <ul>
+            <li>领域 Know-how + 工作流封装是护城河</li>
+            <li>金融、法律、医疗等高壁垒行业先行</li>
+            <li>以结果（任务完成率）而非功能计价</li>
+          </ul>
+          <div class="c-tag">定位：价值兑现层</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 · L07 finance -->
+  <section class="slide" data-index="13">
+    <header class="slide-head anim">
+      <div class="eyebrow">04 · 落地与展望</div>
+      <h2 class="slide-title">金融行业的四个落地场景</h2>
+      <p class="slide-sub">共同特征：文本密集 · 规则明确 · 人机协同 —— 与 Agent 能力高度匹配</p>
+    </header>
+    <div class="slide-body">
+      <div class="pillars">
+        <div class="card pillar anim d1">
+          <div class="p-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+          <h3>智能投研</h3>
+          <p>研报初稿生成、财务数据问答、多源观点比对。分析师从「信息搬运」转向「判断加工」。</p>
+          <div class="p-tag">文档理解 · 检索增强</div>
+        </div>
+        <div class="card pillar anim d2">
+          <div class="p-icon"><i class="fa-solid fa-shield-halved"></i></div>
+          <h3>风控审查</h3>
+          <p>实时舆情监控、交易异常模式识别、反欺诈规则辅助生成。分钟级响应替代小时级人工巡检。</p>
+          <div class="p-tag">实时流 · 模式识别</div>
+        </div>
+        <div class="card pillar anim d3">
+          <div class="p-icon"><i class="fa-solid fa-headset"></i></div>
+          <h3>智能客服</h3>
+          <p>理财问答、业务流程办理。简单问题自动闭环，复杂诉求无缝转人工并携带完整上下文。</p>
+          <div class="p-tag">人机协同 · 全渠道路由</div>
+        </div>
+      </div>
+    </div>
+    <div class="src-note anim d4"><i class="fa-solid fa-circle-info"></i> 场景选择基于行业公开实践共识；落地优先级因机构监管环境与数据基础而异</div>
+  </section>
+
+  <!-- 14 · L14 outlook -->
+  <section class="slide" data-index="14">
+    <header class="slide-head anim">
+      <div class="eyebrow">04 · 落地与展望</div>
+      <h2 class="slide-title">2027 展望：三个确定性趋势</h2>
+    </header>
+    <div class="slide-body">
+      <div class="outlook">
+        <div class="card o-card anim d1">
+          <div class="o-no">01</div>
+          <h3>Agent OS 化</h3>
+          <p>统一的记忆层、权限体系与工具协议成为标配基础设施 —— Agent 从「应用」升格为「操作系统」。</p>
+          <i class="fa-solid fa-desktop o-icon"></i>
+        </div>
+        <div class="card o-card anim d2">
+          <div class="o-no">02</div>
+          <h3>可靠性成为主战场</h3>
+          <p>长时程任务成功率取代基准分数成为采购核心指标；评测驱动的能力工程成为团队标配。</p>
+          <i class="fa-solid fa-gauge-high o-icon"></i>
+        </div>
+        <div class="card o-card anim d3">
+          <div class="o-no">03</div>
+          <h3>人机混合团队</h3>
+          <p>组织 KPI、审批流与管理范式围绕「人 + Agent 协作」重构；Agent 用工成本进入财务报表。</p>
+          <i class="fa-solid fa-people-group o-icon"></i>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 · L20 closing -->
+  <section class="slide l20" data-index="15">
+    <h1 class="anim d1">Thank You</h1>
+    <p class="close-sub anim d2">欢迎讨论：技术路线 · 场景优先级 · 落地节奏</p>
+    <div class="byline anim d3">
+      <span><i class="fa-solid fa-code-branch"></i> generated with web-ppt-builder pipeline</span>
+      <span><i class="fa-solid fa-clock"></i> data as of 2026-09</span>
+    </div>
+    <div class="disclaimer anim d4">
+      本演示包含前瞻性判断与约数口径的市场预测，相关数据来自公开机构报告并存在口径差异，仅供交流参考，不构成任何投资建议或决策依据。
+    </div>
+  </section>
+
+</main>
+
+<nav class="controls" role="navigation" aria-label="幻灯片导航控制">
+  <button data-action="first" aria-label="第一页" title="第一页"><i class="fa-solid fa-backward-step"></i></button>
+  <button data-action="prev" aria-label="上一页" title="上一页"><i class="fa-solid fa-chevron-left"></i></button>
+  <span class="page-num" id="pageNum">1 / 15</span>
+  <button data-action="next" aria-label="下一页" title="下一页"><i class="fa-solid fa-chevron-right"></i></button>
+  <button data-action="last" aria-label="最后一页" title="最后一页"><i class="fa-solid fa-forward-step"></i></button>
+  <span class="sep" aria-hidden="true"></span>
+  <button data-action="fullscreen" aria-label="全屏" title="全屏"><i class="fa-solid fa-expand"></i></button>
+  <button data-action="edit" aria-label="编辑模式" title="编辑模式"><i class="fa-solid fa-pen"></i></button>
+</nav>
+
+<div class="thumbs" id="thumbsBar" role="tablist" aria-label="幻灯片缩略导航"></div>
+<div class="edit-hint">编辑模式：直接点击文本修改 · 内容自动保存到本机</div>
+
+<div class="click-zone click-zone-left" aria-hidden="true" title="上一页"></div>
+<div class="click-zone click-zone-right" aria-hidden="true" title="下一页"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var TOTAL = slides.length;
+  var current = 1;
+  var charts = {};
+
+  function cssVar(name, fallback) {
+    try {
+      var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      return v || fallback;
+    } catch (e) { return fallback; }
+  }
+  var C = {
+    accent:  cssVar('--accent', '#6ea8ff'),
+    accent2: cssVar('--accent-2', '#8f7bff'),
+    accent3: cssVar('--accent-3', '#2fbf8f'),
+    warn:    cssVar('--accent-warn', '#f5c76a'),
+    danger:  cssVar('--accent-danger', '#ff5b5b'),
+    text:    cssVar('--text', '#e8edf6'),
+    soft:    cssVar('--text-soft', '#c8d2e6'),
+    muted:   cssVar('--muted', '#8b96ad'),
+    line:    cssVar('--line-strong', 'rgba(255,255,255,0.18)')
+  };
+
+  /* ---------- navigation ---------- */
+  function goTo(n) {
+    if (n < 1) n = 1;
+    if (n > TOTAL) n = TOTAL;
+    current = n;
+    slides.forEach(function (s) {
+      s.classList.toggle('active', parseInt(s.getAttribute('data-index'), 10) === n);
+    });
+    var num = document.getElementById('pageNum');
+    if (num) num.textContent = current + ' / ' + TOTAL;
+    var bar = document.getElementById('progressBar');
+    if (bar) bar.style.width = (current / TOTAL * 100) + '%';
+    var dots = document.querySelectorAll('.thumbs button');
+    for (var i = 0; i < dots.length; i++) {
+      dots[i].classList.toggle('on', i + 1 === current);
+    }
+    if (history.replaceState) history.replaceState(null, '', '#' + current);
+    initCharts();
+  }
+
+  function loadFromHash() {
+    var m = location.hash.match(/^#(\d+)$/);
+    var n = m ? parseInt(m[1], 10) : 1;
+    if (n >= 1 && n <= TOTAL) goTo(n); else goTo(1);
+  }
+
+  window.addEventListener('hashchange', loadFromHash);
+
+  /* ---------- thumbs ---------- */
+  function buildThumbs() {
+    var bar = document.getElementById('thumbsBar');
+    if (!bar) return;
+    bar.innerHTML = '';
+    slides.forEach(function (s, i) {
+      var b = document.createElement('button');
+      var t = s.querySelector('.slide-title, h1');
+      b.setAttribute('title', (i + 1) + '. ' + (t ? t.textContent.trim().slice(0, 24) : ''));
+      b.setAttribute('aria-label', '跳转到第 ' + (i + 1) + ' 页');
+      b.addEventListener('click', function () { goTo(i + 1); });
+      bar.appendChild(b);
+    });
+  }
+
+  /* ---------- fullscreen ---------- */
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      (document.documentElement.requestFullscreen || function(){}).call(document.documentElement);
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
+
+  /* ---------- edit mode (localStorage persistence) ---------- */
+  var editing = false;
+  function persistEdits() {
+    try {
+      slides.forEach(function (s) {
+        var idx = s.getAttribute('data-index');
+        var body = s.querySelector('.slide-body') || s;
+        localStorage.setItem('sampleDeckEdit_' + idx, body.innerHTML);
+      });
+    } catch (e) { /* storage unavailable — edits stay in-memory */ }
+  }
+  function applyEdits() {
+    try {
+      slides.forEach(function (s) {
+        var idx = s.getAttribute('data-index');
+        var saved = localStorage.getItem('sampleDeckEdit_' + idx);
+        var body = s.querySelector('.slide-body') || s;
+        if (saved !== null) body.innerHTML = saved;
+      });
+    } catch (e) { /* ignore */ }
+  }
+  function toggleEdit() {
+    editing = !editing;
+    document.body.classList.toggle('editing', editing);
+    var bodies = document.querySelectorAll('.slide .slide-body, .slide .cover-sub, .slide h1');
+    bodies.forEach(function (el) { el.setAttribute('contenteditable', editing ? 'true' : 'false'); });
+    if (!editing) persistEdits();
+  }
+  document.addEventListener('input', function (e) {
+    if (editing && e.target.closest && e.target.closest('.slide')) persistEdits();
+  });
+
+  /* ---------- charts (lazy init, CSS-var colors, offline fallback) ---------- */
+  function mkChart(id, option) {
+    var el = document.getElementById(id);
+    if (!el || charts[id]) return;
+    if (typeof echarts === 'undefined') {
+      el.innerHTML = '<div class="chart-fallback">图表加载失败（CDN 离线？）<br>' + (el.getAttribute('data-label') || '') + '</div>';
+      charts[id] = true;
+      return;
+    }
+    try {
+      var inst = echarts.init(el, null, { renderer: 'canvas' });
+      inst.setOption(option);
+      window.addEventListener('resize', function () { inst.resize(); });
+      charts[id] = inst;
+    } catch (e) {
+      el.innerHTML = '<div class="chart-fallback">图表配置错误</div>';
+      charts[id] = true;
+    }
+  }
+
+  function initCharts() {
+    var base = {
+      textStyle: { color: C.soft, fontFamily: '-apple-system, "PingFang SC", "Microsoft YaHei", sans-serif' },
+      grid: { left: 48, right: 24, top: 56, bottom: 36, containLabel: false }
+    };
+
+    if (current === 6) {
+      mkChart('chartCapability', Object.assign({}, base, {
+        grid: { left: 42, right: 20, top: 64, bottom: 32 },
+        legend: { data: ['GPQA Diamond（科学问答）', '长时程代码任务（SWE-bench 类）'], textStyle: { color: C.muted, fontSize: 12 }, top: 6, itemWidth: 16 },
+        xAxis: { type: 'category', data: ['2023', '2024', '2025', '2026'],
+          axisLine: { lineStyle: { color: C.line } }, axisLabel: { color: C.muted } },
+        yAxis: { type: 'value', max: 100, axisLabel: { color: C.muted, formatter: '{value}%' },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } } },
+        tooltip: { trigger: 'axis' },
+        series: [
+          { name: 'GPQA Diamond（科学问答）', type: 'line', smooth: true, data: [42, 77, 84, 88],
+            lineStyle: { width: 3, color: C.accent }, itemStyle: { color: C.accent },
+            areaStyle: { color: 'rgba(110,168,255,0.10)' } },
+          { name: '长时程代码任务（SWE-bench 类）', type: 'line', smooth: true, data: [4, 19, 65, 72],
+            lineStyle: { width: 3, color: C.accent3 }, itemStyle: { color: C.accent3 },
+            areaStyle: { color: 'rgba(47,191,143,0.08)' } }
+        ]
+      }));
+    }
+
+    if (current === 7) {
+      mkChart('chartMarket', Object.assign({}, base, {
+        grid: { left: 44, right: 20, top: 30, bottom: 30 },
+        xAxis: { type: 'category', data: ['2024', '2025', '2026', '2027', '2028', '2029', '2030'],
+          axisLine: { lineStyle: { color: C.line } }, axisLabel: { color: C.muted } },
+        yAxis: { type: 'value', name: '十亿美元', nameTextStyle: { color: C.muted },
+          axisLabel: { color: C.muted }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } } },
+        tooltip: { trigger: 'axis' },
+        series: [{
+          type: 'bar', data: [
+            { value: 5,  itemStyle: { color: C.accent } },
+            { value: 7,  itemStyle: { color: C.accent } },
+            { value: 11, itemStyle: { color: C.accent } },
+            { value: 15, itemStyle: { color: C.accent2 } },
+            { value: 22, itemStyle: { color: C.accent2 } },
+            { value: 32, itemStyle: { color: C.accent2 } },
+            { value: 47, itemStyle: { color: C.warn } }
+          ],
+          barWidth: '52%',
+          itemStyle: { borderRadius: [6, 6, 0, 0] },
+          label: { show: true, position: 'top', color: C.muted, fontSize: 11 }
+        }]
+      }));
+    }
+
+    if (current === 8) {
+      mkChart('chartAdoption', Object.assign({}, base, {
+        grid: { left: 88, right: 48, top: 16, bottom: 28 },
+        xAxis: { type: 'value', max: 100, axisLabel: { color: C.muted, formatter: '{value}%' },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } } },
+        yAxis: { type: 'category', data: ['测试编写', '文档撰写', '调试排错', '代码审查', '编写代码'],
+          axisLine: { lineStyle: { color: C.line } }, axisLabel: { color: C.soft } },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        series: [{
+          type: 'bar', data: [
+            { value: 46, itemStyle: { color: C.accent3 } },
+            { value: 55, itemStyle: { color: C.accent3 } },
+            { value: 62, itemStyle: { color: C.accent } },
+            { value: 70, itemStyle: { color: C.accent } },
+            { value: 81, itemStyle: { color: C.accent2 } }
+          ],
+          barWidth: '55%',
+          itemStyle: { borderRadius: [0, 6, 6, 0] },
+          label: { show: true, position: 'right', color: C.muted, fontSize: 11, formatter: '{c}%' }
+        }]
+      }));
+    }
+  }
+
+  /* ---------- action handlers ---------- */
+  document.querySelectorAll('[data-action]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var action = btn.getAttribute('data-action');
+      if (action === 'first') goTo(1);
+      else if (action === 'prev') goTo(current - 1);
+      else if (action === 'next') goTo(current + 1);
+      else if (action === 'last') goTo(TOTAL);
+      else if (action === 'fullscreen') toggleFullscreen();
+      else if (action === 'edit') toggleEdit();
+    });
+  });
+
+  document.querySelector('.click-zone-left').addEventListener('click', function () { goTo(current - 1); });
+  document.querySelector('.click-zone-right').addEventListener('click', function () { goTo(current + 1); });
+
+  document.addEventListener('keydown', function (e) {
+    if (editing && e.key !== 'Escape') return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goTo(current - 1); }
+    else if (e.key === 'Home') { e.preventDefault(); goTo(1); }
+    else if (e.key === 'End') { e.preventDefault(); goTo(TOTAL); }
+    else if (e.key === 'Escape' && editing) { toggleEdit(); }
+    else if (e.key === 'f' || e.key === 'F') { toggleFullscreen(); }
+  });
+
+  /* ---------- boot ---------- */
+  buildThumbs();
+  applyEdits();
+  loadFromHash();
+})();
+</script>
+</body>
+</html>

@@ -135,7 +135,8 @@ Director waits for user confirmation of the outline. Two user outcomes:
 Director dispatches the Visual agent. Brief:
 1. Load `01-brief.md`, `02-outline.md`, and `references/css-variables.md`.
 2. Pick a theme recipe matching the chosen style. If no recipe fits, design a new one by editing only the tokens.
-3. Produce `03-design-brief.md` covering: color palette (with hex), typography stack, motif catalog (reusable SVG/CSS snippets), per-page decoration plan.
+3. **Consult `templates/`**: open the reference deck closest to the target style and mirror its token usage, motif treatment and per-page decoration plan. Templates are complete gate-passing decks — treat them as the ground truth for "what good looks like".
+4. Produce `03-design-brief.md` covering: color palette (with hex), typography stack, motif catalog (reusable SVG/CSS snippets), per-page decoration plan.
 4. Generate concrete assets in `_ppt-whiteboard/assets/`:
    - `theme.css` — the `:root` block, ready to paste into the deck
    - `motifs.svg` — inline-SVG snippets for cover/background dividers (or empty + CSS-only fallback)
@@ -240,6 +241,7 @@ This skill ships with reference docs and one executable:
 - `references/qa-checklist.md` — Pre-delivery quality gate (~70 checks across 11 categories).
 - `references/prompt-template.md` — User's canonical prompt, archived verbatim, for diffing when customizing.
 - `references/cdn-stack.md` — Pinned CDN URLs + offline fallback pattern.
+- `templates/` — **Reference decks.** Complete, gate-passing HTML decks the Visual/Builder agents consult as style & structure baselines. Adding a new template requires: `qa_static.py` exit 0, strict token usage per `references/css-variables.md`, and a header comment stating topic / layouts covered / features.
 
 Load `agent-roles.md` at the start of every phase. Load others on demand.
 

@@ -1,0 +1,12 @@
+# Normalize line endings to LF for cross-platform consistency.
+# The live skill copy stores LF; without this, any git checkout would
+# reintroduce CRLF and cause false drift between the two copies.
+* text=auto eol=lf
+
+# Binaries (none tracked yet — listed for future safety)
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary

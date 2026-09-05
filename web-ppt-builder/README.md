@@ -28,7 +28,8 @@
 web-ppt-builder/
 ├── SKILL.md                       # ★ 技能主入口 / Director 调度规则
 ├── README.md                      # 你正在读的这一份
-├── .gitignore                     # 编辑器/编译产物/私钥 全部隔离
+├── templates/                     # 参考模板库 — 完整、过门禁的真实交付物
+│   └── ai-agents-2026.html        #   15 页 AI 产业汇报(深色科技+液态玻璃)
 ├── references/                    # 5 个 specialist 派工 brief + 工程契约 + 设计素材
 │   ├── agent-roles.md             # 5 个角色的 copy-paste 派工指令
 │   ├── outline-schema.md          # outline 文件的强制 schema + 8 项 self-check
@@ -110,10 +111,13 @@ msedge --headless=new --disable-gpu \
 
 ---
 
-## 真实交付样本
+## 模板库（templates/）
 
-- `sample-deck.html`(15 页,深色科技+液态玻璃)
-- 详细规格见 `references/css-variables.md` 与 `references/qa-checklist.md`
+`templates/` 下的每份模板都是**完整、通过 QA 门禁的真实交付物**——Visual / Builder 开工前应先查阅最接近目标风格的模板，以其为结构、主题与交互的参考实现：
+
+- **`ai-agents-2026.html`** — 15 页 AI 产业汇报（深色科技 + 液态玻璃），覆盖 13 种标准布局、3 类 ECharts 图表、完整键盘导航 / 缩略导航 / 进度条 / 编辑模式（本地持久化）/ 打印布局 / 响应式。
+
+**新增模板的准入规则**：必须 `qa_static.py` exit 0；严格使用 `css-variables.md` 的 token 体系；文件头注释写明主题 / 布局覆盖 / 特性清单。
 
 ---
 
