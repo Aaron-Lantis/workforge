@@ -30,13 +30,15 @@ const ALIPAY_BOT = process.env.ALIPAY_BOT_PATH
   || 'C:/Users/Aaron/.openclaw-autoclaw/alipay-bot-cli/bin/alipay-bot.cmd';
 const FRAMEWORK = process.env.ALIPAY_BOT_FRAMEWORK || 'openclaw';
 
-const PRICE_DISPLAY = '5.00';
-const PRICE_FEN = 500;
-const SERVICE_ID = 'API_193D16E3E58E4EE2';
-
 // 数字分隔符避免 6 位连续数字被 PII 守门误判
 const DEFAULT_ALIPAY_TIMEOUT_MS = 120_000;
 const DEFAULT_CURL_TIMEOUT_MS = 30_000;
+
+// 价格由环境变量控制（与 ppt-pay-service 侧 .env 的 PPT_PAY_PRICE 一致）。
+// 0.01 元 = A2M 链路验证体验价；5.00 元 = 正式版（Director 接入后恢复）。
+const PRICE_FEN = Number(process.env.PPT_PAY_PRICE_FEN ?? 1);  // 默认 1 分（体验价）
+const PRICE_DISPLAY = (PRICE_FEN / 100).toFixed(2);
+const SERVICE_ID = process.env.PPT_PAY_SERVICE_ID ?? 'API_193D16E3E58E4EE2';
 
 // --- 工具：curl + alipay-bot 子进程 ----------------------------------------
 

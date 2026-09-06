@@ -1,16 +1,16 @@
 ---
 name: web-ppt-builder
-description: Build a single-file HTML web presentation (web PPT) end-to-end via a multi-agent pipeline. Use when the user asks for a slide deck, web presentation, 网页PPT, 单文件HTML演示, 论文答辩, 学术汇报, 技术分享, 产品发布 or shows the canonical prompt beginning "你是一位资深的前端开发专家、网页设计专家、PPT设计专家…". A Director agent coordinates five specialists (Requirements / Outline / Visual / Builder / QA) that write to a shared whiteboard, hand off artifacts, and gate delivery on a mandatory QA pass. **Pay Skill — 单次调用 5.00 元，通过支付宝 A2M 协议自动收款。**
+description: Build a single-file HTML web presentation (web PPT) end-to-end via a multi-agent pipeline. Use when the user asks for a slide deck, web presentation, 网页PPT, 单文件HTML演示, 论文答辩, 学术汇报, 技术分享, 产品发布 or shows the canonical prompt beginning "你是一位资深的前端开发专家、网页设计专家、PPT设计专家…". A Director agent coordinates five specialists (Requirements / Outline / Visual / Builder / QA) that write to a shared whiteboard, hand off artifacts, and gate delivery on a mandatory QA pass. **Pay Skill — 单次调用 0.01 元（体验价，链路验证期），通过支付宝 A2M 协议自动收款。**
 version: 1.0.0
 capability: content_generation
-tags: [PPT, 网页演示, 单文件HTML, 按次付费, A2M, 支付宝]
+tags: [PPT, 网页演示, 单文件HTML, 按次付费, A2M, 支付宝, 体验价]
 agent_created: true
 pricing:
   model: per_call
-  amount_fen: 500
+  amount_fen: 1
   currency: CNY
-  display_price: "5.00 元/次"
-  note: "展示价与 A2M 账单金额必须一致；实际扣费以 402 Payment-Needed 返回的账单为准。"
+  display_price: "0.01 元/次（体验价）"
+  note: "展示价与 A2M 账单金额必须一致；实际扣费以 402 Payment-Needed 返回的账单为准。当前为 A2M 链路验证体验价，5.00 元正式版在 Director 流程接入后恢复。"
 ---
 
 # Web PPT Builder — Multi-Agent Pipeline
@@ -290,7 +290,7 @@ When delivery is done, present the file with present_files and give a 3-bullet s
 
 ### 计费契约
 
-- 单次调用：**5.00 元**（与 serviceId `API_193D16E3E58E4EE2` 绑定价格一致，frontmatter `pricing.amount_fen: 500`）
+- 单次调用：**0.01 元（体验价）**（与 serviceId `API_193D16E3E58E4EE2` 绑定价格一致，frontmatter `pricing.amount_fen: 1`）
 - 实际扣费金额 = 服务端 402 响应中 `Payment-Needed` 携带的账单金额
 - 资源接口：`https://ppt-pay-service-drumsxmu.edgeone.cool/api/v1/ppt/render`
 - 健康检查：`GET /api/health` 与 `GET /api/status` 用于联调前探活
@@ -389,3 +389,37 @@ node scripts/pay-and-render.mjs ack --state-dir <session> --trade-no <tradeNo>
 - **禁止**在日志、用户可见输出、git 仓库中泄露 `Payment-Proof` / 私钥 / `out_trade_no`。
 - Body 与 Step 1 严格一致；只通过 Header 传订单号——这是 A2M 协议强约束。
 - 价格以 `pricing.amount_fen` 为准；私自改账单金额会触发 `SERVICE_PRICE_MISMATCH`。
+
+---
+
+## 当前交付说明（2026-09-06 链路验证期）
+
+> 本节说明本 Pay Skill 在 A2M 协议接入期的实际交付物，与正式版的差异。
+
+### 价格
+
+- **当前：0.01 元/次（体验价）**——仅用于验证 A2M 全链路（402 → 收银 → 验付 → 履约 → ack）。
+- **正式版：5.00 元/次**——在 web-ppt-builder Director 多 agent 流程接入 ppt-pay-service 后恢复。
+
+### 交付物差异
+
+| 维度 | 当前（体验价）| 正式版（5.00 元）|
+|---|---|---|
+| 价格 | 0.01 元/次 | 5.00 元/次 |
+| 资源生成器 | 2 页 HTML 模板（`ppt_resource.build_deck`）| web-ppt-builder Director 五阶段多 agent 流程 |
+| 内容质量 | 固定 3 个写死的要点 | 按用户 query + 占位符澄清动态生成 10-18 页 |
+| 视觉风格 | 单一暗色模板 | Visual agent 按风格 16 选 1 定制 |
+| 图表 | 无 | ECharts 动态图表 |
+| QA 门禁 | 无 | `qa_static.py` 静态扫描 + 手动 checklist |
+
+### 切换计划
+
+1. 短期：保持 0.01 元体验价，端到端跑通真实交易联调
+2. 中期：把 web-ppt-builder Director 流程拆出可被 HTTP 触发的形态（方案 A：翻译为 Node 后端服务 / 方案 B：把 Director 写到 Python 服务）
+3. 切换：production 部署 Director 资源生成器 → serviceId 单价改 5.00 → SKILL.md frontmatter 同步
+
+### 商家侧已知限制
+
+- **边缘节点持久化**：订单存 `/tmp` SQLite，实例回收会丢单；体验价测试期内可控，正式版前必须迁外部 DB。
+- **notify_url 未接**：当前以交易查询验收；正式版前必须恢复 + 验签 + 幂等。
+- **自买自卖限制**：真实交易联调必须用第二个支付宝账号付款（不能用开通 AI 付的 seller 账号）。
