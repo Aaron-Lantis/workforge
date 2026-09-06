@@ -1,7 +1,16 @@
 ---
 name: web-ppt-builder
-description: Build a single-file HTML web presentation (web PPT) end-to-end via a multi-agent pipeline. Use when the user asks for a slide deck, web presentation, 网页PPT, 单文件HTML演示, 论文答辩, 学术汇报, 技术分享, 产品发布 or shows the canonical prompt beginning "你是一位资深的前端开发专家、网页设计专家、PPT设计专家…". A Director agent coordinates five specialists (Requirements / Outline / Visual / Builder / QA) that write to a shared whiteboard, hand off artifacts, and gate delivery on a mandatory QA pass.
+description: Build a single-file HTML web presentation (web PPT) end-to-end via a multi-agent pipeline. Use when the user asks for a slide deck, web presentation, 网页PPT, 单文件HTML演示, 论文答辩, 学术汇报, 技术分享, 产品发布 or shows the canonical prompt beginning "你是一位资深的前端开发专家、网页设计专家、PPT设计专家…". A Director agent coordinates five specialists (Requirements / Outline / Visual / Builder / QA) that write to a shared whiteboard, hand off artifacts, and gate delivery on a mandatory QA pass. **Pay Skill — 单次调用 5.00 元，通过支付宝 A2M 协议自动收款。**
+version: 1.0.0
+capability: content_generation
+tags: [PPT, 网页演示, 单文件HTML, 按次付费, A2M, 支付宝]
 agent_created: true
+pricing:
+  model: per_call
+  amount_fen: 500
+  currency: CNY
+  display_price: "5.00 元/次"
+  note: "展示价与 A2M 账单金额必须一致；实际扣费以 402 Payment-Needed 返回的账单为准。"
 ---
 
 # Web PPT Builder — Multi-Agent Pipeline
@@ -268,3 +277,115 @@ When delivery is done, present the file with present_files and give a 3-bullet s
 1. The deck has N slides on `<topic>`
 2. Key features enabled (nav, animations, charts used)
 3. Any items the user should know about (e.g. "QA flagged 2 P2 issues — documented in `_ppt-whiteboard/04-qa-report.md`")
+
+---
+
+## Pay Skill — 付费工作流（Pay Skill only）
+
+> 本节仅当 Agent 通过 SkillHub 调用本 Skill 时生效。单文件交付模式下用户直接执行本仓库脚本时不走此流程。
+
+### 前置检查（必做）
+
+加载本 Skill 后，先检查当前 Agent 工具列表中是否存在 `mcp__alipay-payment-skill__*` 形式或名称包含 `alipay-payment` / `alipay-bot` 的工具，**或**是否可调用 `alipay-cli mcp call aipay.agent.buyer.pay`（任一即可）。没有则向用户说明"当前 Agent 暂不支持支付宝 AI 付付费能力"，终止本 Skill 的付费流程并提示安装 `alipay-payment-skill`（个人接入）或 `weixinpay`（企业接入）。
+
+### 计费契约
+
+- 单次调用：**5.00 元**（与 serviceId `API_193D16E3E58E4EE2` 绑定价格一致，frontmatter `pricing.amount_fen: 500`）
+- 实际扣费金额 = 服务端 402 响应中 `Payment-Needed` 携带的账单金额
+- 资源接口：`https://ppt-pay-service-drumsxmu.edgeone.cool/api/v1/ppt/render`
+- 健康检查：`GET /api/health` 与 `GET /api/status` 用于联调前探活
+
+### 工作流（四步）
+
+#### Step 1 — 请求资源
+
+```
+POST https://ppt-pay-service-drumsxmu.edgeone.cool/api/v1/ppt/render
+Content-Type: application/json
+
+{"query": "用户的 PPT 主题或完整需求"}
+```
+
+> 用户 query 中包含 `【…】` 占位符时，按 Requirements 阶段原样透传，由 ppt-pay-service 内部的多 agent pipeline 负责澄清。
+
+#### Step 2 — 处理 402 响应
+
+未付款时预期返回 `HTTP 402`，从响应头取：
+
+| Header | 用途 | 保存位置 |
+|---|---|---|
+| `Payment-Needed` | 账单内容（含 `out_trade_no` / `amount` / `service_id`） | `state.paymentNeededFile` |
+| `Payment-Proof` | 仅在支付后重试时携带 | Step 4 用 |
+| `X-Out-Trade-No` | 商户订单号，跨步骤关联 | `state.outTradeNo` |
+
+若 `HTTP 200` 直接收到结果，说明调用方已付款，跳到 Step 4 取结果即可。
+
+#### Step 3 — 发起支付（拉收银）
+
+调 `alipay-cli mcp call aipay.agent.buyer.pay`：
+
+```bash
+alipay-cli mcp call aipay.agent.buyer.pay -d '{
+  "session_id": "<state.sessionId>",
+  "payment_needed_file": "<state.paymentNeededFile>",
+  "resource_url": "https://ppt-pay-service-drumsxmu.edgeone.cool/api/v1/ppt/render",
+  "intent_summary": "生成 PPT：<用户主题>"
+}'
+```
+
+`buyer.pay` 会拉起支付宝收银台，由**用户扫码授权**完成付款。Agent 不接触密钥与签名。
+
+#### Step 4 — 支付后重试（⚠️ 必须执行）
+
+收到 buyer.pay 成功响应后，**重发 Step 1 的同一请求**，但携带 `Payment-Proof` 头：
+
+```
+POST https://ppt-pay-service-drumsxmu.edgeone.cool/api/v1/ppt/render
+Content-Type: application/json
+Payment-Proof: <buyer.pay 响应中 payment_proof 字段>
+X-Out-Trade-No: <Step 2 提取的订单号>
+
+{"query": "用户的 PPT 主题或完整需求（与 Step 1 完全一致）"}
+```
+
+Body 必须与 Step 1 **逐字一致**；只通过 Header 传递订单号与支付凭证。
+
+服务端验付 + 调用内部多 agent pipeline 跑完 web-ppt-builder → 返回 PPT 数据（HTML 字符串 / 文件链接）。
+
+#### Step 5 — 履约回执
+
+拿到 PPT 后**必须**调 `alipay-cli mcp call aipay.agent.fulfillment.confirm` 告知支付宝资源已交付（幂等，重试不会重复扣费或重复交付）：
+
+```bash
+alipay-cli mcp call aipay.agent.fulfillment.confirm -d '{
+  "out_trade_no": "<Step 2 提取的订单号>",
+  "trade_no": "<buyer.pay / verify 返回的交易号>"
+}'
+```
+
+### 编排脚本
+
+`scripts/pay-and-render.mjs` 实现了上述五步的完整编排（probe → pay → complete → ack），Agent 直接调用即可，参数：
+
+```bash
+node scripts/pay-and-render.mjs probe --query "用户主题" --state-dir <session>
+node scripts/pay-and-render.mjs pay --state-dir <session> --session-id <sid>
+node scripts/pay-and-render.mjs complete --state-dir <session>
+node scripts/pay-and-render.mjs ack --state-dir <session> --trade-no <tradeNo>
+```
+
+### 失败处理
+
+| 现象 | 原因 | 处理 |
+|---|---|---|
+| HTTP 5xx | 服务端故障 | 重试 1 次；仍失败退订（不调用 buyer.pay） |
+| 402 缺 `Payment-Needed` | 服务端实现漏字段 | 终止，向用户报告"SERVICE_BUG_PAYMENT_HEADER_MISSING" |
+| buyer.pay 超时 | 用户未扫码 | 让用户重试；out_trade_no 幂等，**禁止重开新单** |
+| 重试 HTTP 402 | Payment-Proof 已过期 | 调 `aipay.agent.payment.verify` 核验；已付则强制 ack 并联系服务端补发 |
+| 履约 ack 失败 | 网络抖动 | 重试 ack，**幂等**；不退订不退费 |
+
+### 安全与合规
+
+- **禁止**在日志、用户可见输出、git 仓库中泄露 `Payment-Proof` / 私钥 / `out_trade_no`。
+- Body 与 Step 1 严格一致；只通过 Header 传订单号——这是 A2M 协议强约束。
+- 价格以 `pricing.amount_fen` 为准；私自改账单金额会触发 `SERVICE_PRICE_MISMATCH`。
