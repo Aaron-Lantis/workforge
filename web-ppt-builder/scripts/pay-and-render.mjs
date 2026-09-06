@@ -17,7 +17,7 @@
  */
 
 import { execFile } from 'node:child_process';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { resolve, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -82,9 +82,44 @@ async function readState(dir) {
 
 // --- Step 1: probe（拿 402 账单） ------------------------------------------
 
-async function probe({ query, stateDir: dir }) {
+// alipay-bot 的 402-query-payment-status --data 走 argv，Windows 32K 限制，
+// 因此 complete 阶段只能发轻量 body（仅 query）。Plan A 设计：probe 阶段把
+// Agent 端预生成的 ppt_html 一次性塞进 body，服务端落库；complete 时省略。
+const PROBE_BODY_LIMIT = 28 * 1024; // 28 KB 阈值（保守值，留 4 KB 给 query/header）
+
+async function probe({ query, stateDir: dir, pptHtmlFile }) {
   await mkdir(dir, { recursive: true });
   const paths = statePaths(dir);
+
+  let pptHtml = '';
+  let pptHtmlBytes = 0;
+  if (pptHtmlFile) {
+    pptHtml = await readFile(resolve(pptHtmlFile), 'utf8');
+    pptHtmlBytes = Buffer.byteLength(pptHtml, 'utf8');
+    if (pptHtmlBytes > 2 * 1024 * 1024) {
+      throw new Error(
+        `ppt_html 文件 ${pptHtmlFile} 体积 ${pptHtmlBytes} 字节，超过服务端 2 MB 上限`
+      );
+    }
+  }
+
+  // 构造 probe body：若带 ppt_html 且总体积 <= PROBE_BODY_LIMIT，就一并塞；
+  // 否则降级 query-only（会让 deliver 拿到的是服务端默认资源）。
+  let probeBody = { query };
+  let probeBodyStrategy = 'query-only';
+  if (pptHtml) {
+    const full = JSON.stringify({ query, ppt_html: pptHtml });
+    if (Buffer.byteLength(full, 'utf8') <= PROBE_BODY_LIMIT) {
+      probeBody = { query, ppt_html: pptHtml };
+      probeBodyStrategy = 'ppt_html-inline';
+    } else {
+      process.stderr.write(
+        `⚠️ ppt_html ${pptHtmlBytes}B 超 ${PROBE_BODY_LIMIT}B 阈值，降级为 query-only 上单；` +
+          '此单 deliver 时拿不到 Agent 预生成的成品。\n' +
+          '建议：拆 deck、裁 ECharts、按页拆分多单；或等待服务端 release 后下单。\n'
+      );
+    }
+  }
 
   const headerFile = paths.responseHeadersFile + '.headers';
   const bodyFile = paths.responseHeadersFile + '.body';
@@ -97,7 +132,7 @@ async function probe({ query, stateDir: dir }) {
     '-w', 'HTTP_STATUS:%{http_code}',
     '-X', 'POST',
     '-H', 'Content-Type: application/json',
-    '-d', JSON.stringify({ query }),
+    '-d', JSON.stringify(probeBody),
     RESOURCE_URL,
   ], 30000);
 
@@ -106,6 +141,9 @@ async function probe({ query, stateDir: dir }) {
   const state = {
     sessionId: randomUUID(),
     query,
+    pptHtmlFile: pptHtmlFile || null,
+    pptHtmlBytes,
+    probeBodyStrategy,
     resourceUrl: RESOURCE_URL,
     priceFen: PRICE_FEN,
     priceDisplay: PRICE_DISPLAY,
@@ -147,6 +185,8 @@ async function probe({ query, stateDir: dir }) {
     status,
     outTradeNo,
     paymentNeeded,
+    probeBodyStrategy,
+    pptHtmlBytes,
   };
 }
 
@@ -204,13 +244,16 @@ async function complete({ stateDir: dir, tradeNo }) {
     throw new Error('缺 tradeNo；请传入 --trade-no 或先正确完成 pay。');
   }
 
-  // 调 alipay-bot 402-query-payment-status：内部会验付 + 重试资源 + 准备履约
+  // 调 alipay-bot 402-query-payment-status：内部会验付 + 重试资源 + 准备履约。
+  // Plan A：retry body 只发 query（alipay-bot --data 走 argv，受 Windows 32K
+  // 限制），ppt_html 已在 probe 阶段落库到服务端订单，服务端会从订单读回。
+  const retryBody = JSON.stringify({ query: state.query });
   const { stdout: queryOut } = await alipayBot([
     '402-query-payment-status',
     '-r', RESOURCE_URL,
     '-s', state.sessionId,
     '-m', 'POST',
-    '-d', JSON.stringify({ query: state.query }),
+    '-d', retryBody,
     '-H', 'Content-Type: application/json',
   ]);
 
@@ -269,10 +312,16 @@ function parseArgs(argv) {
 
 function usage() {
   process.stderr.write(`用法：
-  node scripts/pay-and-render.mjs probe   --query "<用户主题>" --state-dir <dir> [--session-id <sid>]
+  node scripts/pay-and-render.mjs probe   --query "<用户主题>" \\
+                                       --state-dir <dir> [--session-id <sid>] \\
+                                       [--ppt-html-file "<本地 <topic>-ppt.html>"]
   node scripts/pay-and-render.mjs pay     --state-dir <dir> [--session-id <sid>]
   node scripts/pay-and-render.mjs complete --state-dir <dir> [--trade-no <tn>]
   node scripts/pay-and-render.mjs ack     --state-dir <dir> [--trade-no <tn>]
+
+--ppt-html-file：Plan A 模式，指向 Agent 端跑 web-ppt-builder Director 流程
+                产出的 <topic>-ppt.html；probe 时一并随 body 提交（>28KB 会降级
+                query-only 上单并提示），complete 阶段 retry 不再传 body。
 
 资源 URL: ${RESOURCE_URL}
 价格: ${PRICE_DISPLAY} 元/次（serviceId=${SERVICE_ID}）

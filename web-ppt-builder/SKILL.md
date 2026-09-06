@@ -308,6 +308,14 @@ Content-Type: application/json
 
 > 用户 query 中包含 `【…】` 占位符时，按 Requirements 阶段原样透传，由 ppt-pay-service 内部的多 agent pipeline 负责澄清。
 
+**Plan A 模式**：如果调用方已经跑完多 agent pipeline 并生成了成品 PPT HTML，可一并 POST：
+
+```
+{"query": "...", "ppt_html": "<完整 HTML 字符串，最多 2 MB>"}
+```
+
+服务端会把 `ppt_html` 落到订单库；Step 4 retry 时只需带 Payment-Proof，不用重复传 body（绕开 alipay-bot `--data` argv 的 Windows 32K 限制）。
+
 #### Step 2 — 处理 402 响应
 
 未付款时预期返回 `HTTP 402`，从响应头取：
@@ -414,8 +422,8 @@ node scripts/pay-and-render.mjs ack --state-dir <session> --trade-no <tradeNo>
 
 ### 切换计划
 
-1. 短期：保持 0.01 元体验价，端到端跑通真实交易联调
-2. 中期：把 web-ppt-builder Director 流程拆出可被 HTTP 触发的形态（方案 A：翻译为 Node 后端服务 / 方案 B：把 Director 写到 Python 服务）
+1. 短期：保持 0.01 元体验价，Plan A 走通：Agent 端 Director → probe --ppt-html-file → deliver 原样回传
+2. 中期：服务端 release 后取消 28 KB probe body 限制，ppt_html 直接落订单，重试不传 body
 3. 切换：production 部署 Director 资源生成器 → serviceId 单价改 5.00 → SKILL.md frontmatter 同步
 
 ### 商家侧已知限制
