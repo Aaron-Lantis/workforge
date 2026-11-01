@@ -352,7 +352,7 @@ npx -y @alipay/agent-payment@latest install
 
 ### 计费契约
 
-- 单次调用：**5.00 元**（与 serviceId `API_193D16E3E58E4EE2` 登记价一致，frontmatter `pricing.amount_fen: 500`）
+- 单次调用：**5.00 元**（frontmatter `pricing.amount_fen: 500`；serviceId 不写死在文档与脚本里，一律以 402 账单 `method.service_id` 为准）
 - 三处价格必须一致：支付宝服务登记价 / 服务端 402 账单 / SkillHub 展示价
 - 实际扣费金额 = 服务端 402 响应中 `Payment-Needed` 携带的账单金额
 - 资源接口：`https://skill.si-agent.top/api/v1/ppt/render`
@@ -463,7 +463,23 @@ node scripts/selftest_402.mjs
 | 402 缺 `Payment-Needed` | 服务端实现漏字段 | 终止，向用户报告"SERVICE_BUG_PAYMENT_HEADER_MISSING" |
 | buyer.pay 超时 | 用户未扫码 | 让用户重试；out_trade_no 幂等，**禁止重开新单** |
 | 重试 HTTP 402 | Payment-Proof 已过期 | 调 `aipay.agent.payment.verify` 核验；已付则强制 ack 并联系服务端补发 |
+| HTTP 429 | 同一客户端短时间下单过密（服务端按用户限流：默认 10 分钟 5 单） | 读 `Retry-After` 退避后重试原单，**不要重开新单**；这是限流不是支付失败，其他用户不受影响 |
 | 履约 ack 失败 | 网络抖动 | 重试 ack，**幂等**；不退订不退费 |
+
+### 数据处理说明
+
+买家需要知道自己交了什么，这也是合规底线。服务端只处理下列数据，用途单一：
+
+| 数据 | 何时产生 | 用途 | 保留 |
+|---|---|---|---|
+| `query`（演示主题描述） | 发起请求时 | 生成大纲与成品；同一订单重试时复用 | 随订单，最长 30 天 |
+| 成品 HTML | probe 随 body 提交时（≤2 MB） | 付款后交付；不付款不交付 | 随订单，最长 30 天 |
+| `out_trade_no` / `trade_no` | 建单与付款回调 | 幂等、对账、防重复履约 | 30 天 |
+| 客户端标识（IP 的哈希） | 每次请求 | 仅用于按用户限流计数，**不存明文 IP**，不用于画像 | 6 小时（滚动窗口） |
+
+- **不用于**：模型训练、画像、广告、转售，也不与第三方共享。
+- **不收集**：姓名、手机号、邮箱、支付凭证内容；支付凭据由支付宝侧处理，本服务只收 `Payment-Proof` 校验结果。
+- **删除**：订单默认保留 30 天（卖家侧用 `purge_orders.py` 批量清理，支持 `--dry-run` 先看后删）；如需提前删除，凭 `out_trade_no` 联系卖家。
 
 ### 安全与合规
 
@@ -478,7 +494,7 @@ node scripts/selftest_402.mjs
 ### 价格
 
 - **5.00 元/次**。三处必须同一次动作内对齐，否则付款时报 `SERVICE_PRICE_MISMATCH`：
-  1. 支付宝服务注册页 serviceId `API_193D16E3E58E4EE2` 的登记价
+  1. 支付宝服务注册页 serviceId 的登记价（serviceId 见卖家后台，不写在本文档）
   2. `ppt-pay-service` 环境变量 `PPT_PAY_PRICE`（402 账单金额由此产生）
   3. 本文件 frontmatter `pricing.amount_fen` 与 SkillHub 展示价
 

@@ -9,7 +9,7 @@
  *   ack      → 调 alipay-bot 402-buyer-fulfillment-ack 履约回执（幂等）
  *
  * 资源接口：https://skill.si-agent.top/api/v1/ppt/render
- * 计价：5.00 元/次（与 serviceId API_193D16E3E58E4EE2 绑定）
+ * 计价：5.00 元/次（serviceId 以服务端 402 账单为准，不在源码中固定）
  *
  * ⚠️ CLI 区分：
  *   alipay-cli  → 商户侧（开放平台，查询/管理应用），不在本脚本内使用
@@ -74,7 +74,9 @@ const DEFAULT_CURL_TIMEOUT_MS = 30_000;
 // 默认值 500 分 = 5.00 元/次，与 serviceId 登记价保持一致。
 const PRICE_FEN = Number(process.env.PPT_PAY_PRICE_FEN ?? 500);
 const PRICE_DISPLAY = (PRICE_FEN / 100).toFixed(2);
-const SERVICE_ID = process.env.PPT_PAY_SERVICE_ID ?? 'API_193D16E3E58E4EE2';
+// serviceId 不写死在源码里：它属于卖家账户标识，以 402 账单 method.service_id 为准，
+// 仅在需要核对/覆盖时用 PPT_PAY_SERVICE_ID 显式指定。
+const SERVICE_ID = process.env.PPT_PAY_SERVICE_ID ?? '';
 
 // --- 工具：curl + alipay-bot 子进程 ----------------------------------------
 
@@ -221,7 +223,7 @@ async function probe({ query, stateDir: dir, pptHtmlFile }) {
     resourceUrl: RESOURCE_URL,
     priceFen: PRICE_FEN,
     priceDisplay: PRICE_DISPLAY,
-    serviceId: SERVICE_ID,
+    serviceId: SERVICE_ID || null,
     probeAt: new Date().toISOString(),
     httpStatus: status,
   };
@@ -234,6 +236,19 @@ async function probe({ query, stateDir: dir, pptHtmlFile }) {
     return { kind: 'already_paid', status, body };
   }
 
+  if (status === 429) {
+    // 服务端按客户端（IP）限流：同一来源在窗口内下单过密。这是保护机制，
+    // 不是支付失败，也不是资源不可用——退避后重试即可。
+    const head = await readFile(headerFile, 'utf8').catch(() => '');
+    const retryAfter = Number(head.match(/^retry-after:\s*(\d+)/im)?.[1] ?? 0) || 60;
+    const bodyText = await readFile(bodyFile, 'utf8').catch(() => '');
+    throw new Error(
+      `请求被限流（429）：同一客户端在短时间内下单过多，请 ${retryAfter} 秒后重试。\n` +
+        `说明：服务端按用户限流（不是全局熔断），其他用户不受影响；这不是支付失败。\n` +
+        `Body: ${bodyText.slice(0, 300)}`
+    );
+  }
+
   if (status !== 402) {
     throw new Error(`probe 期望 402/200，实际 ${status}。Body: ${(await readFile(bodyFile, 'utf8')).slice(0, 500)}`);
   }
@@ -244,6 +259,16 @@ async function probe({ query, stateDir: dir, pptHtmlFile }) {
 
   if (!paymentNeeded) {
     throw new Error('HTTP 402 响应缺少 Payment-Needed 头。服务端实现 bug。');
+  }
+
+  // serviceId 以账单为准：源码里不留卖家账户标识，账单带什么就是什么。
+  const billServiceId = decodePaymentNeeded(paymentNeeded)?.method?.service_id || null;
+  if (billServiceId) state.serviceId = billServiceId;
+  if (SERVICE_ID && billServiceId && SERVICE_ID !== billServiceId) {
+    throw new Error(
+      `serviceId 不一致：本地 PPT_PAY_SERVICE_ID=${SERVICE_ID}，` +
+        `账单 method.service_id=${billServiceId}。拒绝继续，避免付错商户。`
+    );
   }
 
   // 订单号以 Payment-Needed 里的 protocol.out_trade_no 为准。
@@ -405,7 +430,7 @@ function usage() {
                 服务端按订单落库，complete 阶段 retry 不再传 body。
 
 资源 URL: ${RESOURCE_URL}
-价格: ${PRICE_DISPLAY} 元/次（serviceId=${SERVICE_ID}）
+价格: ${PRICE_DISPLAY} 元/次（serviceId 以 402 账单为准${SERVICE_ID ? `，当前覆盖为 ${SERVICE_ID}` : ''}）
 alipay-bot: 自动发现（可用 ALIPAY_BOT_PATH 覆盖）
 `);
 }
