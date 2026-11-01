@@ -37,6 +37,18 @@ REQUIRED_NEEDLES = [
     'role="main"',
     'aria-label',
     'goTo(',
+    # —— 原始提示词契约（Prompt Contract）：五类必备页面 ——
+    # 缺任意一类即视为结构不完整，QA 必须打回 Builder 重做。
+    'data-slide="cover"',
+    'data-slide="toc"',
+    'data-slide="section"',
+    'data-slide="content"',
+    'data-slide="end"',
+    # —— 原始提示词契约：交互与适配 ——
+    'contenteditable',          # 编辑模式（在线改文案）
+    'toggleTheme(',             # 深色 / 浅色切换
+    'wheel',                    # 鼠标滚轮翻页
+    '@media (max-aspect-ratio',  # 4:3 等比适配（非 16:9 屏不能溢出）
 ]
 
 REQUIRED_FUNCTIONS = [
@@ -48,7 +60,14 @@ REQUIRED_FUNCTIONS = [
     'persistEdits(',
     'loadFromHash(',
     'buildThumbs(',
+    'toggleTheme(',   # 深浅色切换（原提示 5.2）
 ]
+
+# SVG 动态图形：至少一种动效实现（原提示 2.4 要求 svg 动态图形、7.2 要求路径/数据流动画）
+DYNAMIC_SVG_NEEDLES = ('<animate', 'stroke-dashoffset', 'stroke-dasharray')
+
+# 中文注释下限（原提示 4.4「关键逻辑添加中文注释」）
+MIN_CN_COMMENT_LINES = 8
 
 
 def main():
@@ -157,6 +176,66 @@ def main():
     backticks = html.count('`')
     if backticks % 2 != 0:
         issues.append(f"backtick count is odd: {backticks}")
+
+    # 10. 原始提示词契约：五类必备页面都要有，且章节页至少 2 个
+    kinds = {}
+    for m in re.finditer(r'data-slide="(\w+)"', html):
+        kinds[m.group(1)] = kinds.get(m.group(1), 0) + 1
+    if kinds.get('section', 0) < 2:
+        issues.append(
+            f'章节标题页不足：data-slide="section" 只有 {kinds.get("section", 0)} 个，'
+            f'原提示要求每章一页（章节序号 + 标题高亮 + 3~5 个要点）'
+        )
+
+    # 11. 当前页高亮（目录/缩略图/章节导航要用 aria-current 表达"我在哪"）
+    if 'aria-current' not in html:
+        issues.append('missing: aria-current（当前页/当前章节高亮）')
+
+    # 12. 封面必备：日期 + 演讲者/团队
+    cover = re.search(
+        r'<section[^>]*data-slide="cover"[^>]*>(.*?)</section>', html, re.DOTALL)
+    if cover:
+        cover_html = cover.group(1)
+        if not re.search(r'(20\d{2}\s*年|20\d{2}[-/]\d{1,2})', cover_html):
+            issues.append('封面缺少日期信息（原提示 6.1）')
+        if not re.search(r'(演讲|汇报|presenter|主讲|团队|by\s)', cover_html, re.I):
+            issues.append('封面缺少演讲者/团队信息（原提示 6.1）')
+    else:
+        issues.append('missing: data-slide="cover"（封面页）')
+
+    # 13. 封底必备：感谢语/号召语 + 联系方式或二维码
+    end = re.search(
+        r'<section[^>]*data-slide="end"[^>]*>(.*?)</section>', html, re.DOTALL)
+    if end:
+        end_html = end.group(1)
+        if not re.search(r'(谢谢|感谢|Thank|欢迎讨论|期待)', end_html, re.I):
+            issues.append('封底缺少感谢语/号召语（原提示 6.5）')
+        if not re.search(r'(联系|邮箱|微信|电话|@|qr|二维码|qrcode)', end_html, re.I):
+            issues.append('封底缺少联系方式或二维码（原提示 6.5）')
+    else:
+        issues.append('missing: data-slide="end"（封底页）')
+
+    # 14. SVG 动态图形（不能只是静态图标/静态图表）
+    if not any(needle in html for needle in DYNAMIC_SVG_NEEDLES):
+        issues.append(
+            '缺少 SVG 动态图形：需含 <animate> / stroke-dashoffset / stroke-dasharray 之一'
+            '（原提示 2.4 / 7.2）'
+        )
+
+    # 15. 关键逻辑中文注释
+    cn_comment_lines = 0
+    for block in re.findall(r'<script(?![^>]*src=)[^>]*>(.*?)</script>', html, re.DOTALL):
+        for line in block.split('\n'):
+            stripped = line.strip()
+            if stripped.startswith('//') and re.search(r'[\u4e00-\u9fff]', stripped):
+                cn_comment_lines += 1
+            elif stripped.startswith('/*') and re.search(r'[\u4e00-\u9fff]', stripped):
+                cn_comment_lines += 1
+    if cn_comment_lines < MIN_CN_COMMENT_LINES:
+        issues.append(
+            f'JS 中文注释仅 {cn_comment_lines} 行，低于下限 {MIN_CN_COMMENT_LINES} 行'
+            '（原提示 4.4）'
+        )
 
     # Summary
     print(f"\n=== qa_static.py - {os.path.basename(path)} ===")

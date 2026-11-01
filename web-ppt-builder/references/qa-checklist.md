@@ -2,6 +2,25 @@
 
 Run every item below before declaring the file done. Any unchecked item = the file is NOT done.
 
+## 0. 功能契约（P0 硬门槛，先过这一节）
+
+原始 canonical prompt 写死的功能，缺一即 FAIL P0。静态可查的用 grep，其余手点。
+
+- [ ] 缩略图侧栏：容器存在、当前页高亮、点击跳页、可折叠
+- [ ] 四个显式按钮：首页 / 上一页 / 下一页 / 末页（是 `<button>`，不是热区）
+- [ ] 页码 `当前 / 总`
+- [ ] 四种翻页输入：按钮 / 键盘（Home·End·↑↓←→） / 滚轮（防抖，一次一页） / 触屏
+- [ ] 深/浅色切换：两套 token 都生效，偏好写 `localStorage`
+- [ ] 在线编辑：`contenteditable` 可切、改动存 `localStorage`、刷新不丢
+- [ ] 打印：`@media print` + `@page { size: landscape }`，每页一张
+- [ ] 16:9 与 4:3 双比例：可切换或按视口自动选，切换后不溢出
+- [ ] 图标：目录项与关键要点有真图标（FontAwesome/Lucide），**不是圆点/emoji**
+- [ ] 表格：含对比/参数/指标的内容用真 `<table>`
+- [ ] 动效：页面切换 + 逐条入场 + 霓虹/光效边框 + 至少一处线条/数据流动
+- [ ] 数据真实性：页面每个数字/百分比都标了来源+口径+时点；无来源的「示意」数字已删除或改为定性表述（原提示 §1）
+- [ ] 强制页型齐备：Cover（含日期+演讲者）→ Agenda（含图标+逐条淡入）→ ≥1 SectionBreak → Closing（含联系方式/二维码）
+- [ ] 预览图已给用户看过并通过（`_ppt-whiteboard/preview/` 有产物，或 01-brief 记录了「跳过预览」授权）
+
 ## A. Structural Integrity
 
 - [ ] Single `.html` file at the agreed output path
@@ -40,6 +59,8 @@ Run every item below before declaring the file done. Any unchecked item = the fi
 - [ ] `prefers-reduced-motion: reduce` disables animations
 - [ ] No animation runs forever on the cover (avoids battery drain and feels cheap)
 - [ ] Hover/focus states visible on all interactive elements
+- [ ] **霓虹/光效边框（P1）**: 卡片、按钮、章节序号至少一处有动效描边/发光（呼吸或扫光），且不依赖 JS
+- [ ] **流动线条（P1）**: 至少一处 SVG 线条/数据流动（`stroke-dasharray` + `stroke-dashoffset` 动画或粒子），用于架构图/流程图
 - [ ] **内容可见性兜底（P0）**: 内容容器绝对不因入场动画不可见。搜索 `opacity:0` 与 `animation:...both`——凡同现于内容容器 = FAIL。入场动画只做 transform 位移，`@keyframes` 的 `from` 不得含 `opacity:0`（详见 css-variables.md「内容可见性兜底」）。
 
 ## E. Charts (if used)
@@ -56,6 +77,8 @@ Run every item below before declaring the file done. Any unchecked item = the fi
 - [ ] At 375px (mobile): deck mode auto-switches to vertical-scroll or single-column mode
 - [ ] `clamp()` is used for all slide titles and large numbers
 - [ ] Touch targets ≥ 44×44px
+- [ ] **4:3 比例（P0）**: 切到 4:3 舞台（或 1024×768 / 1440×1080 视口）后，无文字溢出、无元素压边、图表不变形
+- [ ] **比例切换（P0）**: 若有 16:9 / 4:3 切换控件，切换后所有页面重新计算尺寸，不停留在旧比例
 
 ## G. Print / Export to PDF
 

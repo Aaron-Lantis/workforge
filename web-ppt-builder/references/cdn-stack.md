@@ -4,6 +4,21 @@ Use these CDN URLs for external libs. Pin a major version (e.g. `@5`) so future 
 
 If a CDN fails (offline / blocked), provide a graceful fallback.
 
+## Vue3 / Shadcn 的取舍（与原始提示的已知偏差）
+
+原始 canonical prompt 要求 Vue3 + Tailwind + Shadcn。本技能**默认不引入 Vue3**，理由与边界：
+
+- 引入 Vue3 后必须在 `#app` 挂载完成前隐藏内容或渲染骨架，否则首帧空白 → 与「双击即开、断网可用」冲突；
+- Shadcn 依赖构建期（Tailwind 插件 + 组件源码），CDN 场景下不可用。
+
+因此默认 **Tailwind Play CDN + 原生 JS**；只有当用户明确说「要 Vue3 / 要 Shadcn」时，才加：
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+```
+
+加了 Vue3 就必须配 `v-cloak` + `[v-cloak]{display:none}`，并接受「断网且 CDN 不可达时整页空白」这一代价——这一点要主动告知用户，不能默默降级。
+
 ## Stylesheets
 
 ```html

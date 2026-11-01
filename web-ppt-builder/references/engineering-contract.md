@@ -188,6 +188,71 @@ The output is ONE HTML file. No sibling files. No local assets. CDN only.
 4. All external CDN URLs are `https://`.
 5. The HTML loads successfully even if all CDNs are blocked (fallbacks cover this).
 
+## Mandatory Deck Contract (machine-enforced)
+
+`scripts/qa_static.py` fails the build if any item below is missing. These are not suggestions — treat them as compile errors.
+
+### 1. Five page types, marked in markup
+
+Every slide root carries `data-slide="<type>"`. The type vocabulary is closed:
+
+| `data-slide` | Page | Required content |
+|---|---|---|
+| `cover` | 封面 | 大标题 + 副标题 + **日期** + **演讲者/团队** + 图形/渐变装饰 |
+| `toc` | 目录 | 章节列表 + **真图标**（FontAwesome/Lucide）+ 逐条淡入 |
+| `section` | 章节标题页 | 章节序号 + 章节标题 + 3~5 条要点概览（**≥2 页**，当前章节序号高亮） |
+| `content` | 内容页 | 一个核心要点；大数字/表格/图表按需 |
+| `end` | 封底 | 感谢语/号召语 + 联系方式或二维码（与封面呼应） |
+
+```html
+<section class="slide" data-slide="cover"  data-index="1">…</section>
+<section class="slide" data-slide="toc"    data-index="2">…</section>
+<section class="slide" data-slide="section" data-index="3">…</section>
+<section class="slide" data-slide="content" data-index="4">…</section>
+<section class="slide" data-slide="end"    data-index="19">…</section>
+```
+
+`data-index` must run 1..N with no gaps.
+
+### 2. Complete navigation surface
+
+| Capability | Implementation requirement |
+|---|---|
+| 全屏 | `toggleFullscreen(` on a button |
+| 缩略图导航（左侧） | `class="thumbs"` container built by `buildThumbs(` |
+| 首/上/下/末页按钮 | Four distinct `data-action` values (`first` `prev` `next` `last`) — all four must exist |
+| 页码指示 | `1 / N`, `aria-current="true"` on the active thumbs item |
+| 键盘 | `ArrowUp/Down/Left/Right`, `Home/End` |
+| 滚轮 | wheel listener, throttled ≥300ms |
+| 触屏 | touch swipe (touchstart/touchend) |
+| 编辑模式 | `contenteditable` toggled by `toggleEdit(`, persisted to localStorage |
+| 深浅色 | `toggleTheme(` + `data-theme` on `<html>` + localStorage, keyboard `T` |
+| 打印 | `@media print` — one slide per page, chrome hidden |
+
+### 3. Aspect-ratio adaptation (16:9 + 4:3)
+
+Slides must letterbox correctly at both ratios. Use an aspect-driven media query and a `--deck-aspect` variable so 4:3 projectors don't clip content:
+
+```css
+.stage { aspect-ratio: 16 / 9; }
+@media (max-aspect-ratio: 4/3) {
+  .stage { aspect-ratio: 4 / 3; }
+  .slide { padding: clamp(20px, 4vh, 56px) clamp(24px, 4vw, 72px); }
+}
+```
+
+### 4. Data truthfulness (hard rule)
+
+Every number, percentage, or ranking on a slide carries **source + scope + as-of date** (page footer or directly under the chart). Invented "illustrative" figures are forbidden — if a reliable figure cannot be found, drop the number and use a qualitative statement instead.
+
+```html
+<figcaption>数据来源：XX 研究院《…报告》2026Q2，口径＝全球出货量 · 截至 2026-09</figcaption>
+```
+
+### 5. Chinese comments in code
+
+Key logic carries `//` comments in Chinese (nav dispatch, wheel throttle, theme switch, edit persistence, chart init). At least 8 commented lines are expected; `qa_static.py` counts them.
+
 ## What the QA Agent Checks
 
 Per the brief, QA reads `references/qa-checklist.md` and verifies every item against the rendered HTML. Common checks the engineering contract implies:

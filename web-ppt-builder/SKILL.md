@@ -1,16 +1,16 @@
 ---
 name: web-ppt-builder
-description: Build a single-file HTML web presentation (web PPT) end-to-end via a multi-agent pipeline. Use when the user asks for a slide deck, web presentation, 网页PPT, 单文件HTML演示, 论文答辩, 学术汇报, 技术分享, 产品发布 or shows the canonical prompt beginning "你是一位资深的前端开发专家、网页设计专家、PPT设计专家…". A Director agent coordinates five specialists (Requirements / Outline / Visual / Builder / QA) that write to a shared whiteboard, hand off artifacts, and gate delivery on a mandatory QA pass. **Pay Skill — 单次调用 0.01 元（体验价，链路验证期），通过支付宝 A2M 协议自动收款。**
-version: 1.0.0
+description: "多智能体流水线一键生成可直接投屏的单文件 HTML 网页 PPT。触发场景：做 PPT、演示文稿、网页PPT、单文件HTML演示、slide deck、web presentation、论文开题/答辩、学术汇报、技术分享、产品发布、团队培训、项目汇报，或用户粘贴「你是一位资深的前端开发专家、网页设计专家、PPT设计专家…」这类开场提示词。流程：Director 统筹 5 个专家——需求澄清 → 大纲结构 → 视觉设计 → 前端实现 → QA 验收，通过共享白板逐环节交接产物，强制 QA 门禁通过后才交付，避免跳过需求确认、风格走样、版式崩坏。交付：单个 .html 文件，双击即开、可直接投屏或分享链接，无需安装 PowerPoint / Keynote，支持键盘翻页与交互图表。不适用：多页网站、交互式 Web 应用、真正的 .pptx 文件。计费：单次调用 5.00 元，走支付宝 AI 按量付费（HTTP 402 协议）自动结算——先返回账单，买家扫码付款后立即渲染并交付，一次付费对应一份成品。"
+version: 1.1.1
 capability: content_generation
-tags: [PPT, 网页演示, 单文件HTML, 按次付费, A2M, 支付宝, 体验价]
+tags: [PPT, 网页演示, 单文件HTML, 按次付费, 支付宝, SkillPay]
 agent_created: true
 pricing:
   model: per_call
-  amount_fen: 1
+  amount_fen: 500
   currency: CNY
-  display_price: "0.01 元/次（体验价）"
-  note: "展示价与 A2M 账单金额必须一致；实际扣费以 402 Payment-Needed 返回的账单为准。当前为 A2M 链路验证体验价，5.00 元正式版在 Director 流程接入后恢复。"
+  display_price: "5.00 元/次"
+  note: "展示价、支付宝服务登记价、服务端 402 账单金额三处必须一致；实际扣费以 402 Payment-Needed 返回的账单为准。"
 ---
 
 # Web PPT Builder — Multi-Agent Pipeline
@@ -28,6 +28,39 @@ Trigger when the user asks for any of:
 - User pastes the canonical "你是一位资深的前端开发专家、网页设计专家、PPT设计专家…" prompt (or a recognizable variant)
 
 Do NOT trigger when the user wants a multi-page website, an interactive web app, or a real `.pptx` file — those are out of scope.
+
+## 硬性功能契约（P0，不许裁剪）
+
+原始用户提示词（canonical prompt）里写死的功能，**不是可选装饰，是验收项**。以下 11 条任一缺失 = 交付不合格，QA 直接判 FAIL P0。
+
+| # | 契约项 | 判据（QA 可静态验证） |
+|---|---|---|
+| F1 | 缩略图导航（左侧） | 存在缩略图容器 + 当前页高亮 + 点击跳页；可折叠 |
+| F2 | 四个显式导航按钮 | 首页 / 上一页 / 下一页 / 末页，**都必须是按钮元素**，不能只靠点击热区 |
+| F3 | 页码 | 形态为 `当前 / 总`，随翻页更新 |
+| F4 | 四种翻页输入 | 按钮 + 键盘（Home/End/↑↓←→）+ **鼠标滚轮（防抖，一次手势一页）** + 触屏滑动 |
+| F5 | 深/浅色切换 | 一套 token 两套值；切换后所有页面同步，偏好写 `localStorage` |
+| F6 | 在线编辑模式 | 可切换 `contenteditable`，改标题与正文；保存到 `localStorage`，刷新不丢 |
+| F7 | 打印样式 | `@media print` 隐藏导航 chrome + `@page { size: landscape }` + 每页一张 |
+| F8 | 16:9 与 4:3 双比例 | 至少支持 16:9 与 4:3 两种舞台比例并可切换（或按视口自动选），切换后不溢出 |
+| F9 | 图标 | 关键要点/目录项必须有图标（FontAwesome 或 Lucide），**禁止用纯色圆点/emoji 顶替** |
+| F10 | 专业表格 | 凡含对比、参数、指标的内容必须用真 `<table>`，不能只用卡片列表 |
+| F11 | 动效细节 | 页面切换动画 + 元素逐条入场（stagger）+ 霓虹/光效边框 + 至少一处线条/数据流动动画 |
+| F12 | 数据真实性（原提示 §1「需要数据、信息真实」） | 页面上出现的每个数字/增长率必须有**来源 + 口径 + 时点**标注（页脚或图表下方）；编造的「示意」数字、无来源的百分比一律禁止。查不到可靠数据就**不写数字**，改用定性表述 |
+
+**强制页型**（`references/outline-schema.md` 已定义，这里再强调一次）：
+
+1. 第 1 页 `Cover`：大标题 + 副标题 + **日期** + **演讲者/团队** + 装饰 + 渐变背景
+2. 第 2 页 `Agenda`：章节列表 + **图标** + **自上而下逐条入场**
+3. 至少 1 个 `SectionBreak`：当前章节序号与标题高亮
+4. 最后一页 `Closing`：感谢/号召语 + **联系方式或二维码** + 与封面呼应
+
+**其他不可裁剪项**：语义化标签、CSS/JS 内联、关键逻辑中文注释、高对比（正文 ≥4.5:1）、任何视口不溢出。
+
+**技术栈取舍**（与原始提示的偏差要主动说明，不能默默降级）：
+
+- 原始提示要求 Vue3 + Tailwind + Shadcn + ECharts + Animate.css。**默认策略**：Tailwind CDN 与 ECharts 按需引入，Vue3 不默认引入（单文件 + 离线优先，引入 Vue3 会让「双击即开、断网可用」失效）。用户明确要求时再加。
+- 引入的 CDN **必须有兜底**：ECharts 未加载时渲染静态 SVG 替代，图标 CDN 失败时不能出现空白方块。
 
 ## Why Multi-Agent
 
@@ -152,6 +185,27 @@ Director dispatches the Visual agent. Brief:
    - Optional: hero imagery direction notes (for the Builder to use ImageGen later)
 
 No user gate. Director spot-checks (do colors look like the chosen style? do typography choices match the audience?) before dispatching Builder.
+
+## Phase 2.5 — 预览图（Preview Render，强制）
+
+上游用户提示词的原始要求是「**先生成大纲，再生成预览图，后制作成品**」——三段顺序不可跳。跳过这一步直接全量构建，是返工率最高的做法（风格不对 → 全部重做）。
+
+Builder 在全量实现前，先产出 **2–3 页静态预览**写进 `_ppt-whiteboard/preview/`：
+
+| 页 | 作用 |
+|---|---|
+| `preview-cover.html` | 封面：验证标题层级、配色、装饰母题、渐变 |
+| `preview-content.html` | 1 页最复杂的内容页：验证图表/表格/卡片密度、留白 |
+| `preview-closing.html`（可选） | 封底：验证与封面呼应 |
+
+要求：
+
+1. 预览页是**完整可打开的 HTML**（同样内联 CSS），不是截图不是线框。
+2. 只做这 2–3 页，45 秒内能看完；不需要导航、不需要动画。
+3. Director 用 `present_files` 给用户看，一句话问：**「风格/密度按这个往下做，还是调整？」**
+4. 用户确认后才进入 Phase 3 全量构建。用户要求调整 → 只改 token 与母题，重出预览，不重写内容。
+
+> 铁律：**没有用户看过预览图，不许开始全量构建。** 用户明确说「不用预览，直接出」时可跳过，但 Director 必须在 `01-brief.md` 里记下这句授权。
 
 ## Phase 3 — Build HTML
 
@@ -278,6 +332,8 @@ When delivery is done, present the file with present_files and give a 3-bullet s
 2. Key features enabled (nav, animations, charts used)
 3. Any items the user should know about (e.g. "QA flagged 2 P2 issues — documented in `_ppt-whiteboard/04-qa-report.md`")
 
+**输出纪律**：原始提示词写的是「直接输出完整 HTML，无需额外解释」。所以交付时**只给文件 + 上面 3 句话**，不写长篇方法论、不复述 prompt、不贴代码片段。过程性内容（大纲、预览图、QA 报告）留在 `_ppt-whiteboard/`，用户要才给。
+
 ---
 
 ## Pay Skill — 付费工作流（Pay Skill only）
@@ -286,13 +342,20 @@ When delivery is done, present the file with present_files and give a 3-bullet s
 
 ### 前置检查（必做）
 
-加载本 Skill 后，先检查当前 Agent 工具列表中是否存在 `mcp__alipay-payment-skill__*` 形式或名称包含 `alipay-payment` / `alipay-bot` 的工具，**或**是否可调用 `alipay-cli mcp call aipay.agent.buyer.pay`（任一即可）。没有则向用户说明"当前 Agent 暂不支持支付宝 AI 付付费能力"，终止本 Skill 的付费流程并提示安装 `alipay-payment-skill`（个人接入）或 `weixinpay`（企业接入）。
+加载本 Skill 后，先确认买家侧支付能力可用：Agent 能调用 `alipay-bot`（`402-buyer-pay` / `402-query-payment-status`）或名称含 `alipay-payment` 的工具。缺失则先安装：
+
+```bash
+npx -y @alipay/agent-payment@latest install
+```
+
+安装后仍不可用，向用户说明"当前 Agent 暂不支持支付宝 AI 付付费能力"并终止付费流程——**不得自行实现付款或签名**。
 
 ### 计费契约
 
-- 单次调用：**0.01 元（体验价）**（与 serviceId `API_193D16E3E58E4EE2` 绑定价格一致，frontmatter `pricing.amount_fen: 1`）
+- 单次调用：**5.00 元**（与 serviceId `API_193D16E3E58E4EE2` 登记价一致，frontmatter `pricing.amount_fen: 500`）
+- 三处价格必须一致：支付宝服务登记价 / 服务端 402 账单 / SkillHub 展示价
 - 实际扣费金额 = 服务端 402 响应中 `Payment-Needed` 携带的账单金额
-- 资源接口：`https://ppt-pay-service-drumsxmu.edgeone.cool/api/v1/ppt/render`
+- 资源接口：`https://skill.si-agent.top/api/v1/ppt/render`
 - 健康检查：`GET /api/health` 与 `GET /api/status` 用于联调前探活
 
 ### 工作流（四步）
@@ -300,7 +363,7 @@ When delivery is done, present the file with present_files and give a 3-bullet s
 #### Step 1 — 请求资源
 
 ```
-POST https://ppt-pay-service-drumsxmu.edgeone.cool/api/v1/ppt/render
+POST https://skill.si-agent.top/api/v1/ppt/render
 Content-Type: application/json
 
 {"query": "用户的 PPT 主题或完整需求"}
@@ -322,9 +385,12 @@ Content-Type: application/json
 
 | Header | 用途 | 保存位置 |
 |---|---|---|
-| `Payment-Needed` | 账单内容（含 `out_trade_no` / `amount` / `service_id`） | `state.paymentNeededFile` |
+| `Payment-Needed` | 账单内容（base64url 编码，含 `protocol.out_trade_no` / `amount` / `service_id`） | `state.paymentNeededFile` |
 | `Payment-Proof` | 仅在支付后重试时携带 | Step 4 用 |
-| `X-Out-Trade-No` | 商户订单号，跨步骤关联 | `state.outTradeNo` |
+| `X-Out-Trade-No` | 商户订单号（**可能不下发**） | 缺省时从 `Payment-Needed` 解码取 `protocol.out_trade_no` |
+
+> 订单号一律以 `Payment-Needed` 解码结果为准。`X-Out-Trade-No` 是可选便利头，
+> 服务端不保证下发；断言"必须有该头"会在真实链路上误判为失败。
 
 若 `HTTP 200` 直接收到结果，说明调用方已付款，跳到 Step 4 取结果即可。
 
@@ -336,7 +402,7 @@ Content-Type: application/json
 alipay-cli mcp call aipay.agent.buyer.pay -d '{
   "session_id": "<state.sessionId>",
   "payment_needed_file": "<state.paymentNeededFile>",
-  "resource_url": "https://ppt-pay-service-drumsxmu.edgeone.cool/api/v1/ppt/render",
+  "resource_url": "https://skill.si-agent.top/api/v1/ppt/render",
   "intent_summary": "生成 PPT：<用户主题>"
 }'
 ```
@@ -348,7 +414,7 @@ alipay-cli mcp call aipay.agent.buyer.pay -d '{
 收到 buyer.pay 成功响应后，**重发 Step 1 的同一请求**，但携带 `Payment-Proof` 头：
 
 ```
-POST https://ppt-pay-service-drumsxmu.edgeone.cool/api/v1/ppt/render
+POST https://skill.si-agent.top/api/v1/ppt/render
 Content-Type: application/json
 Payment-Proof: <buyer.pay 响应中 payment_proof 字段>
 X-Out-Trade-No: <Step 2 提取的订单号>
@@ -382,6 +448,13 @@ node scripts/pay-and-render.mjs complete --state-dir <session>
 node scripts/pay-and-render.mjs ack --state-dir <session> --trade-no <tradeNo>
 ```
 
+上线前后均可跑离线自测（不发真实请求、不产生扣款），覆盖 402 账单、未付款不交付、
+无效凭证、验付成功、同订单幂等重试、服务端 5xx 报错六个分支：
+
+```bash
+node scripts/selftest_402.mjs
+```
+
 ### 失败处理
 
 | 现象 | 原因 | 处理 |
@@ -400,34 +473,35 @@ node scripts/pay-and-render.mjs ack --state-dir <session> --trade-no <tradeNo>
 
 ---
 
-## 当前交付说明（2026-09-06 链路验证期）
-
-> 本节说明本 Pay Skill 在 A2M 协议接入期的实际交付物，与正式版的差异。
+## 交付说明
 
 ### 价格
 
-- **当前：0.01 元/次（体验价）**——仅用于验证 A2M 全链路（402 → 收银 → 验付 → 履约 → ack）。
-- **正式版：5.00 元/次**——在 web-ppt-builder Director 多 agent 流程接入 ppt-pay-service 后恢复。
+- **5.00 元/次**。三处必须同一次动作内对齐，否则付款时报 `SERVICE_PRICE_MISMATCH`：
+  1. 支付宝服务注册页 serviceId `API_193D16E3E58E4EE2` 的登记价
+  2. `ppt-pay-service` 环境变量 `PPT_PAY_PRICE`（402 账单金额由此产生）
+  3. 本文件 frontmatter `pricing.amount_fen` 与 SkillHub 展示价
 
-### 交付物差异
+### 交付物（Plan A）
 
-| 维度 | 当前（体验价）| 正式版（5.00 元）|
-|---|---|---|
-| 价格 | 0.01 元/次 | 5.00 元/次 |
-| 资源生成器 | 2 页 HTML 模板（`ppt_resource.build_deck`）| web-ppt-builder Director 五阶段多 agent 流程 |
-| 内容质量 | 固定 3 个写死的要点 | 按用户 query + 占位符澄清动态生成 10-18 页 |
-| 视觉风格 | 单一暗色模板 | Visual agent 按风格 16 选 1 定制 |
-| 图表 | 无 | ECharts 动态图表 |
-| QA 门禁 | 无 | `qa_static.py` 静态扫描 + 手动 checklist |
+付费闸门解锁的是**成品交付**：Agent 端先跑完本 Skill 的 Director 五阶段流程产出
+`<topic>-ppt.html`，在 probe 阶段随 body 提交（上限 2 MB），服务端按订单落库；
+用户付款后 complete 阶段由服务端读回并交付。
 
-### 切换计划
-
-1. 短期：保持 0.01 元体验价，Plan A 走通：Agent 端 Director → probe --ppt-html-file → deliver 原样回传
-2. 中期：服务端 release 后取消 28 KB probe body 限制，ppt_html 直接落订单，重试不传 body
-3. 切换：production 部署 Director 资源生成器 → serviceId 单价改 5.00 → SKILL.md frontmatter 同步
+| 维度 | 说明 |
+|---|---|
+| 价格 | 5.00 元/次 |
+| 资源生成 | Agent 端 Director 五阶段（Requirements / Outline / Visual / Builder / QA） |
+| 内容规模 | 按用户 query 动态生成 10-18 页 |
+| 视觉风格 | Visual agent 按风格 16 选 1 定制 |
+| 图表 | ECharts 动态图表 |
+| QA 门禁 | `qa_static.py` 静态扫描 + `references/qa-checklist.md` 手动核查 |
 
 ### 商家侧已知限制
 
-- **边缘节点持久化**：订单存 `/tmp` SQLite，实例回收会丢单；体验价测试期内可控，正式版前必须迁外部 DB。
-- **notify_url 未接**：当前以交易查询验收；正式版前必须恢复 + 验签 + 幂等。
-- **自买自卖限制**：真实交易联调必须用第二个支付宝账号付款（不能用开通 AI 付的 seller 账号）。
+- **订单持久化**：订单库落在部署实例内 SQLite（`/var/user/.ppt-data/orders.db`），
+  实测 `durable=true`。实例回收仍有丢单风险，正式放量前建议迁外部数据库。
+- **notify_url 未接**：当前以交易查询（`402-query-payment-status`）验收，配合
+  `POST /api/v1/pay/sweep` 做补偿查询。
+- **自买自卖限制**：真实交易联调必须用**第二个支付宝账号**付款，
+  不能用开通 AI 付的 seller 账号。

@@ -3,7 +3,8 @@
 > 单文件 HTML 网页 PPT 多智能体流水线 —— Director + 5 specialists + 静态 QA 门禁 + Edge headless 真机验证。
 
 [![Skill](https://img.shields.io/badge/Agent-Skill-6ea8ff)](#)
-[![Version](https://img.shields.io/badge/version-v1.0.0-2fbf8f)](#)
+[![Version](https://img.shields.io/badge/version-v1.1.1-2fbf8f)](#)
+[![Pay Skill](https://img.shields.io/badge/price-5.00%20CNY%2F%E6%AC%A1-orange)](#)
 [![License](https://img.shields.io/badge/license-MIT-c8d2e6)](#)
 
 ---
@@ -29,7 +30,7 @@ web-ppt-builder/
 ├── SKILL.md                       # ★ 技能主入口 / Director 调度规则
 ├── README.md                      # 你正在读的这一份
 ├── templates/                     # 参考模板库 — 完整、过门禁的真实交付物
-│   └── ai-agents-2026.html        #   15 页 AI 产业汇报(深色科技+液态玻璃)
+│   └── ai-agents-2026.html        #   19 页 AI 产业汇报(深色科技+液态玻璃+完整章节页)
 ├── references/                    # 5 个 specialist 派工 brief + 工程契约 + 设计素材
 │   ├── agent-roles.md             # 5 个角色的 copy-paste 派工指令
 │   ├── outline-schema.md          # outline 文件的强制 schema + 8 项 self-check
@@ -40,7 +41,42 @@ web-ppt-builder/
 │   ├── qa-checklist.md            # 交付前 11 类 ~70 条 QA 闸门
 │   └── prompt-template.md         # 用户原始提示词存档 + 18 个【填…】占位符映射
 └── scripts/
-    └── qa_static.py               # 零依赖的静态 QA 门禁（无需浏览器）
+    ├── qa_static.py               # 零依赖的静态 QA 门禁（无需浏览器）
+    ├── pay-and-render.mjs         # 402 付费编排：probe → pay → complete → ack
+    └── selftest_402.mjs           # 402 链路离线自测（不发真实请求、不扣款）
+```
+
+---
+
+## 付费说明（Pay Skill）
+
+本 Skill 在 SkillHub 上按次计费，**5.00 元/次**，走支付宝 AI 按量付费（HTTP 402 协议）。
+
+**买家侧依赖**（付款能力由支付宝官方提供，本 Skill 不自行实现签名与付款）：
+
+```bash
+npx -y @alipay/agent-payment@latest install
+```
+
+**调用流程**：
+
+```bash
+node scripts/pay-and-render.mjs probe    --query "<主题>" --state-dir <session> \
+                                         [--ppt-html-file "<Agent 端生成的 deck.html>"]
+node scripts/pay-and-render.mjs pay      --state-dir <session>
+node scripts/pay-and-render.mjs complete --state-dir <session>
+node scripts/pay-and-render.mjs ack      --state-dir <session>
+```
+
+未付款时资源接口返回 `HTTP 402` + `Payment-Needed` 账单；付款后携带 `Payment-Proof`
+重试同一请求，服务端验付通过即交付成品。同一订单重复重试不会重复扣费。
+
+**价格三处必须一致**：支付宝服务登记价 / 服务端 402 账单金额 / SkillHub 展示价。
+
+上线前后可随时跑离线自测验证六个分支：
+
+```bash
+node scripts/selftest_402.mjs
 ```
 
 ---
@@ -115,7 +151,7 @@ msedge --headless=new --disable-gpu \
 
 `templates/` 下的每份模板都是**完整、通过 QA 门禁的真实交付物**——Visual / Builder 开工前应先查阅最接近目标风格的模板，以其为结构、主题与交互的参考实现：
 
-- **`ai-agents-2026.html`** — 15 页 AI 产业汇报（深色科技 + 液态玻璃），覆盖 13 种标准布局、3 类 ECharts 图表、完整键盘导航 / 缩略导航 / 进度条 / 编辑模式（本地持久化）/ 打印布局 / 响应式。
+- **`ai-agents-2026.html`** — 19 页 AI 产业汇报（深色科技 + 液态玻璃），覆盖 13 种标准布局、3 类 ECharts 图表、封面/目录/4 个章节标题页/内容页/封底五类页型、完整键盘导航 / 缩略导航 / 进度条 / 编辑模式（本地持久化）/ 深浅色切换 / 4:3 适配 / 滚轮翻页 / 打印布局 / 响应式。
 
 **新增模板的准入规则**：必须 `qa_static.py` exit 0；严格使用 `css-variables.md` 的 token 体系；文件头注释写明主题 / 布局覆盖 / 特性清单。
 
@@ -123,6 +159,17 @@ msedge --headless=new --disable-gpu \
 
 ## 版本与变更
 
+- **v1.1.1** (2026-11-01): 门禁硬化（对齐原始交付契约）
+  - `qa_static.py` 新增 16 项强制检查：五类必备页型 `data-slide`(cover/toc/section/content/end)、滚轮翻页、主题切换、编辑模式、4:3 适配、`aria-current` 高亮、封面日期+演讲者、封底感谢+联系方式、SVG 动态图形、JS 中文注释 ≥8 行、章节页 ≥2 → 缺一项即打回
+  - 模板补齐全部缺项：4 个章节标题页、data-index 重排 1–19、滚轮翻页（节流 420ms）、深/浅色切换（`T` 快捷键 + localStorage）、4:3 适配、封底联系方式、封面演讲者署名、9 处中文注释
+  - P0 契约新增 **F12 数据真实性**：页面每个数字必须标来源+口径+时点，查不到就不写数字（禁止"示意"数字）
+  - `qa-checklist.md` 同步新增数据真实性核查项
+- **v1.1.0** (2026-10-25): 付费化（Pay Skill）
+  - 接入支付宝 AI 按量付费，定价 5.00 元/次，三处价格对齐
+  - `pay-and-render.mjs` 去除硬编码本机路径，改为自动发现 `alipay-bot`
+  - 订单号改以 `Payment-Needed` 解码为准（服务端不下发 `X-Out-Trade-No` 头）
+  - probe 提交上限由 28 KB 放开到 2 MB，完整 deck 可一次落库
+  - 新增 `selftest_402.mjs` 离线自测（6 分支 8 断言）
 - **v1.0.0** (2026-09-06): 首次公开
   - Director + 5 specialists 多智能体流水线
   - `qa_static.py` 静态门禁(零依赖)

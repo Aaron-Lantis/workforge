@@ -8,7 +8,7 @@
  *   complete → 用 Payment-Proof 重试，拿到 PPT
  *   ack      → 调 alipay-bot 402-buyer-fulfillment-ack 履约回执（幂等）
  *
- * 资源接口：https://ppt-pay-service-drumsxmu.edgeone.cool/api/v1/ppt/render
+ * 资源接口：https://skill.si-agent.top/api/v1/ppt/render
  * 计价：5.00 元/次（与 serviceId API_193D16E3E58E4EE2 绑定）
  *
  * ⚠️ CLI 区分：
@@ -16,18 +16,53 @@
  *   alipay-bot  → 付款方智能体侧（拉收银、查单、履约回执）
  */
 
-import { execFile } from 'node:child_process';
+import { exec, execFile } from 'node:child_process';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
-import { resolve, join } from 'node:path';
+import { resolve, join, dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { homedir } from 'node:os';
 
 const execFileP = promisify(execFile);
+const execP = promisify(exec);
 
 const RESOURCE_URL = process.env.PPT_PAY_RESOURCE_URL
-  || 'https://ppt-pay-service-drumsxmu.edgeone.cool/api/v1/ppt/render';
-const ALIPAY_BOT = process.env.ALIPAY_BOT_PATH
-  || 'C:/Users/Aaron/.openclaw-autoclaw/alipay-bot-cli/bin/alipay-bot.cmd';
+  || 'https://skill.si-agent.top/api/v1/ppt/render';
+
+// alipay-bot 定位：环境变量 → PATH → 常见安装目录。
+// 不得硬编码任何用户目录——Skill 包会分发到买家机器，硬编码路径必然失效。
+async function resolveAlipayBot() {
+  if (process.env.ALIPAY_BOT_PATH) return process.env.ALIPAY_BOT_PATH;
+
+  const candidates = [
+    'alipay-bot',
+    'alipay-bot.cmd',
+    join(homedir(), '.openclaw-autoclaw', 'alipay-bot-cli', 'bin', 'alipay-bot.cmd'),
+    join(homedir(), '.openclaw-autoclaw', 'alipay-bot-cli', 'bin', 'alipay-bot'),
+    join(homedir(), '.alipay-bot', 'bin', 'alipay-bot.cmd'),
+    join(homedir(), '.local', 'bin', 'alipay-bot'),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      if (candidate.includes('/') || candidate.includes('\\')) {
+        await stat(candidate);
+        return candidate;
+      }
+      await execFileP(candidate, ['--help'], { timeout: 10_000 });
+      return candidate;
+    } catch {
+      // 继续尝试下一个候选
+    }
+  }
+
+  throw new Error(
+    '未找到 alipay-bot。请先安装买家侧支付能力：\n' +
+    '  npx -y @alipay/agent-payment@latest install\n' +
+    '安装后可用 ALIPAY_BOT_PATH 显式指定可执行文件位置。'
+  );
+}
+
 const FRAMEWORK = process.env.ALIPAY_BOT_FRAMEWORK || 'openclaw';
 
 // 数字分隔符避免 6 位连续数字被 PII 守门误判
@@ -35,8 +70,9 @@ const DEFAULT_ALIPAY_TIMEOUT_MS = 120_000;
 const DEFAULT_CURL_TIMEOUT_MS = 30_000;
 
 // 价格由环境变量控制（与 ppt-pay-service 侧 .env 的 PPT_PAY_PRICE 一致）。
-// 0.01 元 = A2M 链路验证体验价；5.00 元 = 正式版（Director 接入后恢复）。
-const PRICE_FEN = Number(process.env.PPT_PAY_PRICE_FEN ?? 1);  // 默认 1 分（体验价）
+// 三处价格必须一致：支付宝服务登记价 / 服务端 402 账单 / SkillHub 展示价。
+// 默认值 500 分 = 5.00 元/次，与 serviceId 登记价保持一致。
+const PRICE_FEN = Number(process.env.PPT_PAY_PRICE_FEN ?? 500);
 const PRICE_DISPLAY = (PRICE_FEN / 100).toFixed(2);
 const SERVICE_ID = process.env.PPT_PAY_SERVICE_ID ?? 'API_193D16E3E58E4EE2';
 
@@ -47,16 +83,53 @@ async function curlCapture(args, timeoutMs = 30000) {
   return { stdout, stderr };
 }
 
+let _alipayBotPath = null;
+
+async function getAlipayBot() {
+  if (!_alipayBotPath) _alipayBotPath = await resolveAlipayBot();
+  return _alipayBotPath;
+}
+
+/** 按平台给命令行参数加引号（经 shell 执行时必须）。 */
+function quoteArg(value) {
+  const str = String(value);
+  if (process.platform === 'win32') {
+    return /[\s"^&|<>()]/.test(str)
+      ? `"${str.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1')}"`
+      : str;
+  }
+  return /[^\w@%+=:,./-]/.test(str) ? `'${str.replace(/'/g, "'\\''")}'` : str;
+}
+
 /**
- * 调 alipay-bot 子命令；stdout 必为 JSON 或人类可读文本
+ * 调 alipay-bot 子命令；stdout 必为 JSON 或人类可读文本。
+ *
+ * Windows 下 .cmd 不能直接用 execFile 执行（ENOENT），必须经 shell；
+ * 因此统一走 shell + 显式引号，避免依赖各平台对裸数组参数的处理差异。
  */
 async function alipayBot(args, timeoutMs = DEFAULT_ALIPAY_TIMEOUT_MS) {
+  const bot = await getAlipayBot();
   const cmdArgs = [...args];
   if (!cmdArgs.includes('-w') && !cmdArgs.includes('--framework')) {
     cmdArgs.push('--framework', FRAMEWORK);
   }
-  const { stdout, stderr } = await execFileP(ALIPAY_BOT, cmdArgs, { timeout: timeoutMs });
+  const command = [quoteArg(bot), ...cmdArgs.map(quoteArg)].join(' ');
+  const { stdout, stderr } = await execP(command, { timeout: timeoutMs, maxBuffer: 8 * 1024 * 1024 });
   return { stdout, stderr };
+}
+
+/**
+ * 解码 Payment-Needed（base64url 编码的紧凑 JSON）。
+ * 解码结果只用于读取订单号与金额，原值一律原样保存、不回写。
+ */
+function decodePaymentNeeded(paymentNeeded) {
+  try {
+    const b64 = paymentNeeded.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    return JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
+  } catch {
+    return null;
+  }
 }
 
 // --- 状态文件：每个 session 落盘 -------------------------------------------
@@ -82,10 +155,11 @@ async function readState(dir) {
 
 // --- Step 1: probe（拿 402 账单） ------------------------------------------
 
-// alipay-bot 的 402-query-payment-status --data 走 argv，Windows 32K 限制，
-// 因此 complete 阶段只能发轻量 body（仅 query）。Plan A 设计：probe 阶段把
-// Agent 端预生成的 ppt_html 一次性塞进 body，服务端落库；complete 时省略。
-const PROBE_BODY_LIMIT = 28 * 1024; // 28 KB 阈值（保守值，留 4 KB 给 query/header）
+// probe 走 curl，不受 alipay-bot --data 的 argv 长度限制，可以把 Agent 端
+// 预生成的 ppt_html 一次性塞进 body 落库；complete 阶段由 alipay-bot 发起，
+// 只能发轻量 body（仅 query），成品由服务端按订单号读回。
+// 上限取服务端 ppt_html 上限 2 MB，留 64 KB 给 query 与 JSON 包装。
+const PROBE_BODY_LIMIT = 2 * 1024 * 1024 - 64 * 1024;
 
 async function probe({ query, stateDir: dir, pptHtmlFile }) {
   await mkdir(dir, { recursive: true });
@@ -167,14 +241,21 @@ async function probe({ query, stateDir: dir, pptHtmlFile }) {
   // 解析 402 响应头
   const headerText = await readFile(headerFile, 'utf8');
   const paymentNeeded = headerText.match(/^payment-needed:\s*(.+)$/im)?.[1]?.trim();
-  const outTradeNo = headerText.match(/^x-out-trade-no:\s*(.+)$/im)?.[1]?.trim();
 
   if (!paymentNeeded) {
     throw new Error('HTTP 402 响应缺少 Payment-Needed 头。服务端实现 bug。');
   }
 
+  // 订单号以 Payment-Needed 里的 protocol.out_trade_no 为准。
+  // 服务端不保证下发 X-Out-Trade-No 头，头缺失时必须能解码兜底，
+  // 否则后续 complete / ack 会因订单号为空而断链。
+  const outTradeNo =
+    headerText.match(/^x-out-trade-no:\s*(.+)$/im)?.[1]?.trim()
+    || decodePaymentNeeded(paymentNeeded)?.protocol?.out_trade_no
+    || null;
+
   state.paymentNeeded = paymentNeeded;
-  state.outTradeNo = outTradeNo || null;
+  state.outTradeNo = outTradeNo;
 
   // a2m-production-verify 强调：Payment-Needed 必须原样保存，不解码不改写
   await writeFile(paths.paymentNeededFile, paymentNeeded, { encoding: 'utf8', mode: 0o600 });
@@ -320,12 +401,12 @@ function usage() {
   node scripts/pay-and-render.mjs ack     --state-dir <dir> [--trade-no <tn>]
 
 --ppt-html-file：Plan A 模式，指向 Agent 端跑 web-ppt-builder Director 流程
-                产出的 <topic>-ppt.html；probe 时一并随 body 提交（>28KB 会降级
-                query-only 上单并提示），complete 阶段 retry 不再传 body。
+                产出的 <topic>-ppt.html；probe 时随 body 一并提交（上限 2 MB），
+                服务端按订单落库，complete 阶段 retry 不再传 body。
 
 资源 URL: ${RESOURCE_URL}
 价格: ${PRICE_DISPLAY} 元/次（serviceId=${SERVICE_ID}）
-alipay-bot: ${ALIPAY_BOT}
+alipay-bot: 自动发现（可用 ALIPAY_BOT_PATH 覆盖）
 `);
 }
 
@@ -348,7 +429,11 @@ async function main() {
   try {
     switch (cmd) {
       case 'probe':
-        result = await probe({ query: args.query, stateDir: dir });
+        result = await probe({
+          query: args.query,
+          stateDir: dir,
+          pptHtmlFile: args['ppt-html-file'] === true ? null : args['ppt-html-file'],
+        });
         break;
       case 'pay':
         result = await pay({ stateDir: dir, sessionId: args['session-id'] });

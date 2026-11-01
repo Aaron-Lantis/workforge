@@ -339,7 +339,47 @@ body.editing .slide.active .slide-body, body.editing .slide.active .cover-sub { 
 body.editing .edit-hint { display:block; }
 
 /* ===== responsive ===== */
-@media (max-width: 900px) {
+
+  /* ---------- 章节标题页 ---------- */
+  .chapter-divider{justify-content:center;align-items:flex-start}
+  .chapter-num{
+    font-size:120px; font-weight:800; line-height:1; letter-spacing:-.04em;
+    color:transparent; -webkit-text-stroke:1px var(--accent); opacity:.55;
+  }
+  .chapter-body{margin-top:18px}
+  .chapter-title{font-size:44px; font-weight:750; letter-spacing:-.02em; margin-top:6px}
+  .chapter-points{list-style:none; margin-top:22px; display:grid; gap:12px}
+  .chapter-points li{
+    position:relative; padding-left:22px; color:var(--muted); font-size:17px; line-height:1.5;
+  }
+  .chapter-points li::before{
+    content:""; position:absolute; left:0; top:.62em; width:8px; height:8px; border-radius:2px;
+    background:var(--accent); box-shadow:0 0 12px var(--accent);
+  }
+  .chapter-flow{position:absolute; left:0; right:0; bottom:84px; width:100%; height:8px}
+
+  /* ---------- 4:3 等比适配：非 16:9 屏幕也不溢出视窗 ---------- */
+  @media (max-aspect-ratio: 4/3) {
+    .slide{padding:48px 56px 64px}
+    .slide-title{font-size:30px}
+    h1{font-size:44px}
+    .chapter-num{font-size:88px}
+    .chapter-title{font-size:34px}
+  }
+
+  /* ---------- 浅色模式（原提示 5.2：深色/浅色切换） ---------- */
+  :root[data-theme="light"]{
+    --bg:#F4F6FB; --bg-alt:#FFFFFF;
+    --surface:rgba(16,24,40,.04); --surface-strong:rgba(16,24,40,.07);
+    --line:rgba(16,24,40,.12); --line-strong:rgba(16,24,40,.20);
+    --text:#0F172A; --text-soft:#334155; --muted:#5A6A85; --inverse:#FFFFFF;
+    --accent:#0B6BCB; --accent-2:#6D5BD0; --accent-3:#0E9F6E;
+    --glow:0 0 32px rgba(11,107,203,.25);
+    --grad-hero: radial-gradient(1200px 600px at 80% -10%, rgba(11,107,203,.12), transparent 60%),
+                 radial-gradient(900px 500px at -10% 30%, rgba(109,91,208,.10), transparent 55%);
+  }
+
+  @media (max-width: 900px) {
   .split, .chart-split, .bigstat { grid-template-columns:1fr; }
   .pillars, .kpis, .compare, .outlook { grid-template-columns:1fr; }
   .quad { grid-template-columns:1fr; }
@@ -385,7 +425,7 @@ body.editing .edit-hint { display:block; }
 <main id="deck" role="main">
 
   <!-- 01 · L01 cover -->
-  <section class="slide l01" data-index="1">
+  <section class="slide l01" data-slide="cover" data-index="1">
     <div class="cover-motif anim d1"><i class="fa-solid fa-robot"></i></div>
     <h1 class="anim d2">AI Agents <span class="thin">2026</span></h1>
     <p class="cover-sub anim d3">从模型到系统 —— 智能体的技术演进与产业落地</p>
@@ -394,12 +434,14 @@ body.editing .edit-hint { display:block; }
       <span class="dot"></span>
       <span><i class="fa-solid fa-chalkboard-user"></i> 技术评审 · 产业 briefing</span>
       <span class="dot"></span>
+      <span><i class="fa-solid fa-user-tie"></i> 演讲人：【姓名 · 部门/团队】</span>
+      <span class="dot"></span>
       <span><i class="fa-solid fa-layer-group"></i> web-ppt-builder 样板</span>
     </div>
   </section>
 
   <!-- 02 · L19 agenda -->
-  <section class="slide" data-index="2">
+  <section class="slide" data-slide="toc" data-index="2">
     <header class="slide-head anim">
       <div class="eyebrow">Agenda</div>
       <h2 class="slide-title">本次汇报的四个部分</h2>
@@ -427,7 +469,35 @@ body.editing .edit-hint { display:block; }
   </section>
 
   <!-- 03 · L17 timeline -->
-  <section class="slide" data-index="3">
+    <!-- 章节标题页 · 01 演进脉络 -->
+  <section class="slide chapter-divider" data-slide="section" data-index="3">
+    <div class="chapter-num anim d1">01</div>
+    <div class="chapter-body">
+      <div class="eyebrow anim d2">Chapter 01 · 本章概览</div>
+      <h2 class="chapter-title anim d3">演进脉络</h2>
+      <ul class="chapter-points anim d4">
+          <li>四年，三个范式拐点</li>
+          <li>从对话到推理再到自主执行</li>
+          <li>每次跃迁都重构上层应用形态</li>
+          <li>Agent OS 的雏形已现</li>
+      </ul>
+    </div>
+    <!-- 数据流路径动画：虚线流动，示意本章内容推进 -->
+    <svg class="chapter-flow" viewBox="0 0 600 8" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="flowGrad01" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0"/>
+          <stop offset="50%" stop-color="var(--accent)" stop-opacity="1"/>
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <line x1="0" y1="4" x2="600" y2="4" stroke="url(#flowGrad01)" stroke-width="2" stroke-dasharray="16 12">
+        <animate attributeName="stroke-dashoffset" from="28" to="0" dur="1.8s" repeatCount="indefinite"/>
+      </line>
+    </svg>
+  </section>
+
+<section class="slide" data-slide="content" data-index="4">
     <header class="slide-head anim">
       <div class="eyebrow">01 · 演进脉络</div>
       <h2 class="slide-title">四年，三个范式拐点</h2>
@@ -469,7 +539,35 @@ body.editing .edit-hint { display:block; }
   </section>
 
   <!-- 04 · L07 what is an agent -->
-  <section class="slide" data-index="4">
+    <!-- 章节标题页 · 02 技术解剖 -->
+  <section class="slide chapter-divider" data-slide="section" data-index="5">
+    <div class="chapter-num anim d1">02</div>
+    <div class="chapter-body">
+      <div class="eyebrow anim d2">Chapter 02 · 本章概览</div>
+      <h2 class="chapter-title anim d3">技术解剖</h2>
+      <ul class="chapter-points anim d4">
+          <li>规划、工具、记忆三大支柱</li>
+          <li>多智能体协作范式</li>
+          <li>四层技术栈的工程契约</li>
+          <li>从 Demo 到产线的工程瓶颈</li>
+      </ul>
+    </div>
+    <!-- 数据流路径动画：虚线流动，示意本章内容推进 -->
+    <svg class="chapter-flow" viewBox="0 0 600 8" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="flowGrad02" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0"/>
+          <stop offset="50%" stop-color="var(--accent)" stop-opacity="1"/>
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <line x1="0" y1="4" x2="600" y2="4" stroke="url(#flowGrad02)" stroke-width="2" stroke-dasharray="16 12">
+        <animate attributeName="stroke-dashoffset" from="28" to="0" dur="1.8s" repeatCount="indefinite"/>
+      </line>
+    </svg>
+  </section>
+
+<section class="slide" data-slide="content" data-index="6">
     <header class="slide-head anim">
       <div class="eyebrow">02 · 技术解剖</div>
       <h2 class="slide-title">什么是 AI Agent</h2>
@@ -503,7 +601,7 @@ body.editing .edit-hint { display:block; }
   </section>
 
   <!-- 05 · L05 stack -->
-  <section class="slide" data-index="5">
+  <section class="slide" data-slide="content" data-index="7">
     <header class="slide-head anim">
       <div class="eyebrow">02 · 技术解剖</div>
       <h2 class="slide-title">技术栈的四层解剖</h2>
@@ -542,7 +640,35 @@ body.editing .edit-hint { display:block; }
   </section>
 
   <!-- 06 · chart: capability -->
-  <section class="slide" data-index="6">
+    <!-- 章节标题页 · 03 数据视角 -->
+  <section class="slide chapter-divider" data-slide="section" data-index="8">
+    <div class="chapter-num anim d1">03</div>
+    <div class="chapter-body">
+      <div class="eyebrow anim d2">Chapter 03 · 本章概览</div>
+      <h2 class="chapter-title anim d3">数据视角</h2>
+      <ul class="chapter-points anim d4">
+          <li>能力基准的真实曲线</li>
+          <li>市场规模与增速口径</li>
+          <li>开发者采用率的分布</li>
+          <li>金融行业的渗透节奏</li>
+      </ul>
+    </div>
+    <!-- 数据流路径动画：虚线流动，示意本章内容推进 -->
+    <svg class="chapter-flow" viewBox="0 0 600 8" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="flowGrad03" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0"/>
+          <stop offset="50%" stop-color="var(--accent)" stop-opacity="1"/>
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <line x1="0" y1="4" x2="600" y2="4" stroke="url(#flowGrad03)" stroke-width="2" stroke-dasharray="16 12">
+        <animate attributeName="stroke-dashoffset" from="28" to="0" dur="1.8s" repeatCount="indefinite"/>
+      </line>
+    </svg>
+  </section>
+
+<section class="slide" data-slide="content" data-index="9">
     <header class="slide-head anim">
       <div class="eyebrow">03 · 数据视角</div>
       <h2 class="slide-title">能力演进：两条陡峭的曲线</h2>
@@ -566,7 +692,7 @@ body.editing .edit-hint { display:block; }
   </section>
 
   <!-- 07 · chart: market -->
-  <section class="slide" data-index="7">
+  <section class="slide" data-slide="content" data-index="10">
     <header class="slide-head anim">
       <div class="eyebrow">03 · 数据视角</div>
       <h2 class="slide-title">市场规模：一条陡峭的增长跑道</h2>
@@ -597,7 +723,7 @@ body.editing .edit-hint { display:block; }
   </section>
 
   <!-- 08 · big stat: coding -->
-  <section class="slide" data-index="8">
+  <section class="slide" data-slide="content" data-index="11">
     <header class="slide-head anim">
       <div class="eyebrow">03 · 数据视角</div>
       <h2 class="slide-title">渗透最快的主战场：软件开发</h2>
@@ -618,7 +744,7 @@ body.editing .edit-hint { display:block; }
   </section>
 
   <!-- 09 · L06 multi-agent -->
-  <section class="slide" data-index="9">
+  <section class="slide" data-slide="content" data-index="12">
     <header class="slide-head anim">
       <div class="eyebrow">02 · 技术解剖</div>
       <h2 class="slide-title">为什么是多智能体</h2>
@@ -647,7 +773,35 @@ body.editing .edit-hint { display:block; }
   </section>
 
   <!-- 10 · L09 challenges -->
-  <section class="slide" data-index="10">
+    <!-- 章节标题页 · 04 落地与展望 -->
+  <section class="slide chapter-divider" data-slide="section" data-index="13">
+    <div class="chapter-num anim d1">04</div>
+    <div class="chapter-body">
+      <div class="eyebrow anim d2">Chapter 04 · 本章概览</div>
+      <h2 class="chapter-title anim d3">落地与展望</h2>
+      <ul class="chapter-points anim d4">
+          <li>金融行业四大落地场景</li>
+          <li>安全治理的闭环设计</li>
+          <li>2027 三大确定性趋势</li>
+          <li>投入节奏与优先级建议</li>
+      </ul>
+    </div>
+    <!-- 数据流路径动画：虚线流动，示意本章内容推进 -->
+    <svg class="chapter-flow" viewBox="0 0 600 8" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="flowGrad04" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0"/>
+          <stop offset="50%" stop-color="var(--accent)" stop-opacity="1"/>
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <line x1="0" y1="4" x2="600" y2="4" stroke="url(#flowGrad04)" stroke-width="2" stroke-dasharray="16 12">
+        <animate attributeName="stroke-dashoffset" from="28" to="0" dur="1.8s" repeatCount="indefinite"/>
+      </line>
+    </svg>
+  </section>
+
+<section class="slide" data-slide="content" data-index="14">
     <header class="slide-head anim">
       <div class="eyebrow">04 · 落地与展望</div>
       <h2 class="slide-title">规模化的四道坎</h2>
@@ -676,7 +830,7 @@ body.editing .edit-hint { display:block; }
   </section>
 
   <!-- 11 · L13 governance flow -->
-  <section class="slide" data-index="11">
+  <section class="slide" data-slide="content" data-index="15">
     <header class="slide-head anim">
       <div class="eyebrow">04 · 落地与展望</div>
       <h2 class="slide-title">安全治理的闭环</h2>
@@ -712,7 +866,7 @@ body.editing .edit-hint { display:block; }
   </section>
 
   <!-- 12 · L08 landscape -->
-  <section class="slide" data-index="12">
+  <section class="slide" data-slide="content" data-index="16">
     <header class="slide-head anim">
       <div class="eyebrow">04 · 落地与展望</div>
       <h2 class="slide-title">产业格局：三个生态位</h2>
@@ -751,7 +905,7 @@ body.editing .edit-hint { display:block; }
   </section>
 
   <!-- 13 · L07 finance -->
-  <section class="slide" data-index="13">
+  <section class="slide" data-slide="content" data-index="17">
     <header class="slide-head anim">
       <div class="eyebrow">04 · 落地与展望</div>
       <h2 class="slide-title">金融行业的四个落地场景</h2>
@@ -783,7 +937,7 @@ body.editing .edit-hint { display:block; }
   </section>
 
   <!-- 14 · L14 outlook -->
-  <section class="slide" data-index="14">
+  <section class="slide" data-slide="content" data-index="18">
     <header class="slide-head anim">
       <div class="eyebrow">04 · 落地与展望</div>
       <h2 class="slide-title">2027 展望：三个确定性趋势</h2>
@@ -813,12 +967,18 @@ body.editing .edit-hint { display:block; }
   </section>
 
   <!-- 15 · L20 closing -->
-  <section class="slide l20" data-index="15">
+  <section class="slide l20" data-slide="end" data-index="19">
     <h1 class="anim d1">Thank You</h1>
     <p class="close-sub anim d2">欢迎讨论：技术路线 · 场景优先级 · 落地节奏</p>
     <div class="byline anim d3">
       <span><i class="fa-solid fa-code-branch"></i> generated with web-ppt-builder pipeline</span>
       <span><i class="fa-solid fa-clock"></i> data as of 2026-09</span>
+    </div>
+    <!-- 联系方式（可替换为二维码图片） -->
+    <div class="byline anim d4">
+      <span><i class="fa-solid fa-envelope"></i> 联系方式：【替换为你的邮箱】</span>
+      <span><i class="fa-solid fa-comment-dots"></i> 微信：web-ppt-builder</span>
+      <span><i class="fa-solid fa-link"></i> https://example.com/deck</span>
     </div>
     <div class="disclaimer anim d4">
       本演示包含前瞻性判断与约数口径的市场预测，相关数据来自公开机构报告并存在口径差异，仅供交流参考，不构成任何投资建议或决策依据。
@@ -836,6 +996,7 @@ body.editing .edit-hint { display:block; }
   <span class="sep" aria-hidden="true"></span>
   <button data-action="fullscreen" aria-label="全屏" title="全屏"><i class="fa-solid fa-expand"></i></button>
   <button data-action="edit" aria-label="编辑模式" title="编辑模式"><i class="fa-solid fa-pen"></i></button>
+  <button data-action="theme" aria-label="切换深色/浅色" title="切换深色/浅色"><i class="fa-solid fa-circle-half-stroke"></i></button>
 </nav>
 
 <div class="thumbs" id="thumbsBar" role="tablist" aria-label="幻灯片缩略导航"></div>
@@ -873,6 +1034,7 @@ body.editing .edit-hint { display:block; }
   };
 
   /* ---------- navigation ---------- */
+  // 翻页主入口：越界钳制 → 切换 active → 更新页码/进度 → 重绘图表 → 写回 hash
   function goTo(n) {
     if (n < 1) n = 1;
     if (n > TOTAL) n = TOTAL;
@@ -886,8 +1048,19 @@ body.editing .edit-hint { display:block; }
     if (bar) bar.style.width = (current / TOTAL * 100) + '%';
     var dots = document.querySelectorAll('.thumbs button');
     for (var i = 0; i < dots.length; i++) {
-      dots[i].classList.toggle('on', i + 1 === current);
+      // 当前页高亮：视觉态 + 无障碍语义（aria-current）同步
+      var on = (i + 1 === current);
+      dots[i].classList.toggle('on', on);
+      if (on) dots[i].setAttribute('aria-current', 'true');
+      else dots[i].removeAttribute('aria-current');
     }
+    // 目录/章节导航同步高亮当前章节
+    var cur = slides[n - 1];
+    var kind = cur ? cur.getAttribute('data-slide') : '';
+    document.querySelectorAll('[data-chapter-link]').forEach(function (el) {
+      var isCur = el.getAttribute('data-chapter-link') === (cur ? cur.textContent.slice(0, 40) : '');
+      if (isCur) el.setAttribute('aria-current', 'true'); else el.removeAttribute('aria-current');
+    });
     if (history.replaceState) history.replaceState(null, '', '#' + current);
     initCharts();
   }
@@ -901,6 +1074,7 @@ body.editing .edit-hint { display:block; }
   window.addEventListener('hashchange', loadFromHash);
 
   /* ---------- thumbs ---------- */
+  // 构建左侧缩略图导航：标题取每页首个 h1/.slide-title，点击直达
   function buildThumbs() {
     var bar = document.getElementById('thumbsBar');
     if (!bar) return;
@@ -915,7 +1089,30 @@ body.editing .edit-hint { display:block; }
     });
   }
 
+
+  /* ---------- 深色 / 浅色切换：记住用户选择，跨会话保留 ---------- */
+  function toggleTheme() {
+    var root = document.documentElement;
+    var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('ppt-theme', next); } catch (e) {}
+    // 主题切换后图表配色需要重绘，否则 ECharts 仍是旧主题
+    initCharts();
+  }
+
+  /* ---------- 鼠标滚轮翻页：节流，避免一次滚动翻多页 ---------- */
+  var wheelLock = false;
+  window.addEventListener('wheel', function (e) {
+    if (editing) return;
+    if (wheelLock) return;
+    if (Math.abs(e.deltaY) < 24) return;
+    wheelLock = true;
+    setTimeout(function () { wheelLock = false; }, 420);
+    goTo(current + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: true });
+
   /* ---------- fullscreen ---------- */
+  // 全屏切换：不同浏览器前缀差异已在此收敛
   function toggleFullscreen() {
     if (!document.fullscreenElement) {
       (document.documentElement.requestFullscreen || function(){}).call(document.documentElement);
@@ -945,6 +1142,7 @@ body.editing .edit-hint { display:block; }
       });
     } catch (e) { /* ignore */ }
   }
+  // 编辑模式：正文元素可编辑，改动即时写入 localStorage，Esc 退出
   function toggleEdit() {
     editing = !editing;
     document.body.classList.toggle('editing', editing);
@@ -976,6 +1174,7 @@ body.editing .edit-hint { display:block; }
     }
   }
 
+  // 图表初始化：仅渲染当前页与相邻页，避免一次性挂载全部实例
   function initCharts() {
     var base = {
       textStyle: { color: C.soft, fontFamily: '-apple-system, "PingFang SC", "Microsoft YaHei", sans-serif' },
@@ -1061,6 +1260,7 @@ body.editing .edit-hint { display:block; }
       else if (action === 'last') goTo(TOTAL);
       else if (action === 'fullscreen') toggleFullscreen();
       else if (action === 'edit') toggleEdit();
+      else if (action === 'theme') toggleTheme();
     });
   });
 
@@ -1075,9 +1275,15 @@ body.editing .edit-hint { display:block; }
     else if (e.key === 'End') { e.preventDefault(); goTo(TOTAL); }
     else if (e.key === 'Escape' && editing) { toggleEdit(); }
     else if (e.key === 'f' || e.key === 'F') { toggleFullscreen(); }
+    else if (e.key === 't' || e.key === 'T') { toggleTheme(); }
   });
 
   /* ---------- boot ---------- */
+  // 恢复上次选择的主题，默认深色
+  try {
+    var saved = localStorage.getItem('ppt-theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+  } catch (e) {}
   buildThumbs();
   applyEdits();
   loadFromHash();
