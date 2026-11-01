@@ -499,8 +499,8 @@ node scripts/selftest_402.mjs
 
 ### 商家侧已知限制
 
-- **订单持久化**：订单库落在部署实例内 SQLite（`/var/user/.ppt-data/orders.db`），
-  实测 `durable=true`。实例回收仍有丢单风险，正式放量前建议迁外部数据库。
+- **订单持久化**：订单落到对象存储（每单一个 JSON，`orders/<out_trade_no>.json`），
+  跨实例、跨部署可读，容器回收不丢单；`/api/status` 的 `durable` 由真实写入探针判定，不再按路径猜测。
 - **notify_url 未接**：当前以交易查询（`402-query-payment-status`）验收，配合
   `POST /api/v1/pay/sweep` 做补偿查询。
 - **自买自卖限制**：真实交易联调必须用**第二个支付宝账号**付款，
