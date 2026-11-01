@@ -17,7 +17,7 @@ Run every item below before declaring the file done. Any unchecked item = the fi
 - [ ] 图标：目录项与关键要点有真图标（FontAwesome/Lucide），**不是圆点/emoji**
 - [ ] 表格：含对比/参数/指标的内容用真 `<table>`
 - [ ] 动效：页面切换 + 逐条入场 + 霓虹/光效边框 + 至少一处线条/数据流动
-- [ ] 数据真实性：页面每个数字/百分比都标了来源+口径+时点；无来源的「示意」数字已删除或改为定性表述（原提示 §1）
+- [ ] 数据真实性：页面每个数字/百分比都标了来源+口径+时点；无来源的「示意」数字已删除或改为定性表述（原提示 §1）（仅 `templates/` 与预览文件可保留标注为「示意数据」的演示值，且必须显式标注；交付物内零容忍）
 - [ ] 强制页型齐备：Cover（含日期+演讲者）→ Agenda（含图标+逐条淡入）→ ≥1 SectionBreak → Closing（含联系方式/二维码）
 - [ ] 预览图已给用户看过并通过（`_ppt-whiteboard/preview/` 有产物，或 01-brief 记录了「跳过预览」授权）
 
