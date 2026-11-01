@@ -18,15 +18,16 @@ Slide decks eat hours of fiddling: layout drift, broken charts, theme inconsiste
 ### Highlights
 
 - **Multi-agent pipeline** — Director + 5 specialists with a shared whiteboard and explicit hand-off contracts
-- **Automated QA gate** — 25+ classes of structural defects caught without a browser (data-index continuity, handler mapping, theme-token leaks, JS brace balance)
+- **Automated QA gate** — 16 mandatory delivery-contract checks plus 25+ classes of structural defects, all caught without a browser (page types, wheel paging, theme toggle, edit mode, 4:3 adaptation, data-index continuity, handler mapping, theme-token leaks, JS brace balance)
 - **Apple-HIG-inspired design system** — 7 theme recipes, layered shadows, a 10-step type ramp, safe entrance-animation rules
-- **Reference templates** — real 15-page decks exercising the layout catalog (start with `templates/ai-agents-2026.html`)
+- **Reference templates** — a real 19-page deck exercising the layout catalog end to end: cover, agenda, four chapter dividers, content pages, closing (start with `templates/ai-agents-2026.html`)
 - **Self-verifying** — every template must pass the same QA gate as user deliverables
+- **Data truthfulness** — every figure on a slide must carry source, scope and as-of date; invented illustrative numbers are rejected by contract
 
 ## Quick start
 
 1. Point your AI assistant at `web-ppt-builder/SKILL.md`.
-2. Give it a natural-language brief — e.g. "a 15-page dark-tech deck on X for a technical review".
+2. Give it a natural-language brief — e.g. "a 16-page dark-tech deck on X for a technical review".
 3. The pipeline runs Requirements → Outline → Visual → Build → QA and returns a single-file HTML deck.
 4. Open the file in any browser: arrow keys navigate, `f` toggles fullscreen, the pen icon enters edit mode (edits persist locally).
 
