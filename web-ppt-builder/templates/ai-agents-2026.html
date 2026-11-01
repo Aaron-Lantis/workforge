@@ -1181,7 +1181,7 @@ body.editing .edit-hint { display:block; }
       grid: { left: 48, right: 24, top: 56, bottom: 36, containLabel: false }
     };
 
-    if (current === 6) {
+    if (current === 9) {
       mkChart('chartCapability', Object.assign({}, base, {
         grid: { left: 42, right: 20, top: 64, bottom: 32 },
         legend: { data: ['GPQA Diamond（科学问答）', '长时程代码任务（SWE-bench 类）'], textStyle: { color: C.muted, fontSize: 12 }, top: 6, itemWidth: 16 },
@@ -1201,7 +1201,7 @@ body.editing .edit-hint { display:block; }
       }));
     }
 
-    if (current === 7) {
+    if (current === 10) {
       mkChart('chartMarket', Object.assign({}, base, {
         grid: { left: 44, right: 20, top: 30, bottom: 30 },
         xAxis: { type: 'category', data: ['2024', '2025', '2026', '2027', '2028', '2029', '2030'],
@@ -1226,7 +1226,7 @@ body.editing .edit-hint { display:block; }
       }));
     }
 
-    if (current === 8) {
+    if (current === 11) {
       mkChart('chartAdoption', Object.assign({}, base, {
         grid: { left: 88, right: 48, top: 16, bottom: 28 },
         xAxis: { type: 'value', max: 100, axisLabel: { color: C.muted, formatter: '{value}%' },

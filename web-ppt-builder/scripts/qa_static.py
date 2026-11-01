@@ -237,6 +237,31 @@ def main():
             '（原提示 4.4）'
         )
 
+    # 16. JS 页码条件必须指向真实存在的 data-index（防"插入章节页后 JS 条件错位"）
+    # 事故原型：图表渲染写在 `if (current === 6)`，但该 chart 元素所在 slide 的
+    # data-index 已重排为 9 —— 页面永远不渲染，且无任何报错。
+    slides_by_idx = {}
+    for m in re.finditer(r'<section\s[^>]*data-slide[^>]*>.*?</section>', html, re.DOTALL):
+        dm = re.search(r'data-index="(\d+)"', m.group(0))
+        if dm:
+            slides_by_idx[int(dm.group(1))] = m.group(0)
+    for n in set(re.findall(r'current\s*===\s*(\d+)', html)):
+        if int(n) not in idxs:
+            issues.append(
+                f'JS 条件 current === {n} 没有对应的 data-index={n} 页面'
+                '（页码重排后未同步，逻辑静默失效）'
+            )
+    # mkChart 触发条件所在页必须真的包含该 chart 容器
+    for cond_n, chart_id in re.findall(
+            r'current\s*===\s*(\d+)[^{}]*?\{\s*mkChart\(\s*[\'"]([\w-]+)[\'"]', html):
+        slide = slides_by_idx.get(int(cond_n))
+        target = re.search(rf'id=[\'"]{re.escape(chart_id)}[\'"]', html)
+        if target and slide and f'id="{chart_id}"' not in slide:
+            issues.append(
+                f'mkChart(\'{chart_id}\') 挂在 current === {cond_n}，但该元素不在 '
+                f'data-index={cond_n} 的页内（图表永不渲染）'
+            )
+
     # Summary
     print(f"\n=== qa_static.py - {os.path.basename(path)} ===")
     if issues:
